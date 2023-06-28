@@ -6,3 +6,6 @@ Current target: v0.1
 This target should include:
 - basic documentation and planning
 - setting up basic structure
+
+# Current Architecture
+![Basic Architecture (WIP)](docs/project/basic_architecture.svg)
