@@ -18,3 +18,9 @@ typing_extensions==4.5.0
 urllib3==2.0.2
 Werkzeug==2.3.4
 zipp==3.15.0
+selenium==4.10.0
+scrapy==2.9.0
+scrapy-inline-requests==0.3.1
+scrapy-proxies==0.4
+scrapy-proxy-pool==0.1.9
+lxml==4.9.2
