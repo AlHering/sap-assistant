@@ -6,9 +6,9 @@ from src.utility.gold.sqlalchemy_entity_data_interface import SQLAlchemyEntityIn
 from src.utility.gold.filter_mask import FilterMask
 
 
-class ModelDatabase(DBInterface):
+class ArchiverDatabase(DBInterface):
     """
-    Class, representing ACA Database.
+    Class, representing website archiver database interfaces.
     """
 
     def __init__(self) -> None:
@@ -19,8 +19,8 @@ class ModelDatabase(DBInterface):
             "backend": "database",
             "framework": "sqlalchemy",
             "arguments": {
-                "database": cfg.ENV["DB_URL"],
-                "dialect": cfg.ENV["DB_DIALECT"],
+                "database": cfg.ENV["WEBSITE_ARCHIVER_DB_URL"],
+                "dialect": cfg.ENV["WEBSITE_ARCHIVER_DB_DIALECT"],
                 "encoding": "utf-8"
             },
             "targets": "*",
