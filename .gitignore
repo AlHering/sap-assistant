@@ -161,5 +161,7 @@ cython_debug/
 data/
 docs/literature
 docs/todo
-data/aura_cognitive_architecture.db
 configuration/*.env
+
+# Exceptions
+!data/media_types
