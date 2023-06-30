@@ -38,3 +38,22 @@ class ArchiverDatabase(DBInterface):
         :return: Existing or newly created archiver object.
         """
         pass
+
+    def add_page(archiver_id: int, url: str, path: str) -> None:
+        """
+        Method for adding page under archiver.
+        :param archiver_id: Archiver ID.
+        :param url: Page URL.
+        :param path: Local path.
+        """
+        pass
+
+    def add_asset(archiver_id: int, page_id: int, url: str, path: str) -> None:
+        """
+        Method for adding asset under archiver and page.
+        :param archiver_id: Archiver ID.
+        :param page_id: Page ID.
+        :param url: Asset URL.
+        :param path: Local path.
+        """
+        pass
