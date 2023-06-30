@@ -20,6 +20,27 @@ from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.exc import ProgrammingError, OperationalError
 from typing import List, Union, Any, Optional
 
+# Dictionary, mapping filter types of filters to SQLAlchemy-compatible filters
+SQLALCHEMY_FILTER_CONVERTER = {
+    "equals": lambda x, y: x == y,
+    "not_equals": lambda x, y: not_(x == y),
+    "contains": lambda x, y: x.contains(y),
+    "not_contains": lambda x, y: not_(x.contains(y)),
+    "is_contained": lambda x, y: x.in_(y),
+    "not_is_contained": lambda x, y: not_(x.in_(y)),
+    "==": lambda x, y: x == y,
+    "!=": lambda x, y: or_(x != y, and_(x is None, y is not None)),
+    "has": lambda x, y: x.contains(y),
+    "not_has": lambda x, y: not_(x.contains(y)),
+    "in": lambda x, y: x.in_(y),
+    "not_in": lambda x, y: not_(x.in_(y)),
+    "and": lambda *x: and_(*x),
+    "or": lambda *x: or_(*x),
+    "not": lambda x: not_(x),
+    "&&": lambda *x: and_(*x),
+    "||": lambda *x: or_(*x),
+    "!": lambda x: not_(x)
+}
 
 # Supported dialects
 SUPPORTED_DIALECTS = ["sqlite", "mysql",
