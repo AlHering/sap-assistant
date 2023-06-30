@@ -29,6 +29,11 @@ ENTITY_PROFILE = {
             "type": "text",
             "description": "Local saving path of the target data.",
         },
+        "profile": {
+            "type": "json",
+            "required": True,
+            "description": "Profile of the website archiver.",
+        },
         "created": {
             "type": "datetime",
             "description": "Timestamp of creation.",
