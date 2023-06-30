@@ -29,3 +29,12 @@ class ArchiverDatabase(DBInterface):
             entity_profiles=ENTITY_PROFILE,
             linkage_profiles=LINKAGE_PROFILE,
             view_profiles=VIEW_PROFILE)
+
+    def get_or_create_archiver(target_url: str, profile: dict) -> Any:
+        """
+        Method for getting or creating archiver object.
+        :param target_url: Target URL.
+        :param profile: Archiver profile.
+        :return: Existing or newly created archiver object.
+        """
+        pass
