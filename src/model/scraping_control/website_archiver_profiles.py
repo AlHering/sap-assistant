@@ -7,10 +7,10 @@
 """
 
 ENTITY_PROFILE = {
-    "model": {
+    "archiver": {
         "#meta": {
-            "schema": "machine_learning_models",
-            "description": "Machine Learning model.",
+            "schema": "archiving",
+            "description": "Website archivers.",
             "keep_deleted": True
         },
         "id": {
@@ -18,19 +18,16 @@ ENTITY_PROFILE = {
             "key": True,
             "autoincrement": True,
             "required": True,
-            "description": "ID of the model."
+            "description": "ID of the archiver."
         },
-        "metadata": {
-            "type": "json",
-            "description": "Metadata of the model.",
-        },
-        "api_url": {
+        "url": {
             "type": "text",
-            "description": "API URL for fetching metadata.",
+            "required": True,
+            "description": "URL of target website of the archiver."
         },
-        "source": {
-            "type": "str",
-            "description": "Metadata source.",
+        "path": {
+            "type": "text",
+            "description": "Local saving path of the target data.",
         },
         "created": {
             "type": "datetime",
@@ -50,10 +47,10 @@ ENTITY_PROFILE = {
             "delete": "lambda _: 'X'"
         }
     },
-    "model_version": {
+    "page": {
         "#meta": {
-            "schema": "machine_learning_models",
-            "description": "Local Machine Learning model version.",
+            "schema": "archiving",
+            "description": "Page of a target website.",
             "keep_deleted": True
         },
         "id": {
@@ -61,70 +58,15 @@ ENTITY_PROFILE = {
             "key": True,
             "autoincrement": True,
             "required": True,
-            "description": "ID of the model version."
+            "description": "ID of the page."
         },
-        "metadata": {
-            "type": "json",
-            "description": "Metadata of the model version.",
-        },
-        "api_url": {
+        "url": {
             "type": "text",
             "description": "API URL for fetching metadata.",
         },
-        "source": {
-            "type": "str",
-            "description": "Metadata source.",
-        },
-        "created": {
-            "type": "datetime",
-            "description": "Timestamp of creation.",
-            "post": "lambda _: datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')"
-        },
-        "updated": {
-            "type": "datetime",
-            "description": "Timestamp of last update.",
-            "post": "lambda _: datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')",
-            "patch": "lambda _: datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')",
-            "delete": "lambda _: datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')"
-        },
-        "inactive": {
-            "type": "char",
-            "description": "Flag for marking inactive entries.",
-            "delete": "lambda _: 'X'"
-        }
-    },
-    "model_file": {
-        "#meta": {
-            "schema": "machine_learning_models",
-            "description": "Local Machine Learning model file.",
-            "keep_deleted": True
-        },
-        "id": {
-            "type": "int",
-            "key": True,
-            "autoincrement": True,
-            "required": True,
-            "description": "ID of the model file."
-        },
-        "file_name": {
-            "type": "str",
-            "required": True,
-            "description": "File name, consisting of name and extension.",
-        },
-        "folder": {
+        "path": {
             "type": "text",
-            "required": True,
-            "description": "Folder of model file.",
-        },
-        "sha256": {
-            "type": "str",
-            "description": "SHA256 hash of the file."
-        },
-        "status": {
-            "type": "str",
-            "required": True,
-            "description": "Status of the model file: 'unknown' -> 'linked' -> 'collected' -> 'tracked'",
-            "post": "lambda _: 'unknown'"
+            "description": "Local saving path of the target data.",
         },
         "created": {
             "type": "datetime",
@@ -146,8 +88,8 @@ ENTITY_PROFILE = {
     },
     "asset": {
         "#meta": {
-            "schema": "machine_learning_models",
-            "description": "Local Machine Learning model assets.",
+            "schema": "archiving",
+            "description": "Asset of target website.",
             "keep_deleted": True
         },
         "id": {
@@ -157,30 +99,13 @@ ENTITY_PROFILE = {
             "required": True,
             "description": "ID of the asset."
         },
-        "type": {
-            "type": "str",
-            "required": True,
-            "description": "Asset type.",
+        "url": {
+            "type": "text",
+            "description": "API URL for fetching metadata.",
         },
         "path": {
             "type": "text",
-            "required": True,
-            "description": "File path of the asset.",
-        },
-        "sha256": {
-            "type": "str",
-            "description": "SHA256 hash of the file."
-        },
-        "metadata": {
-            "type": "json",
-            "required": True,
-            "description": "Metadata of the asset.",
-        },
-        "status": {
-            "type": "str",
-            "required": True,
-            "description": "Status of the model file: 'collected' -> 'downloaded'",
-            "post": "lambda _: 'collected'"
+            "description": "Local saving path of the target data.",
         },
         "created": {
             "type": "datetime",
@@ -203,10 +128,10 @@ ENTITY_PROFILE = {
 }
 
 LINKAGE_PROFILE = {
-    "link": {
-        "source": "model_file",
-        "target": "model_version",
-        "relation": "1:1",
+    "pages": {
+        "source": "archiver",
+        "target": "page",
+        "relation": "1:n",
         "linkage_type": "foreign_key",
         "source_key": [
             "int",
@@ -216,7 +141,21 @@ LINKAGE_PROFILE = {
             "int",
             "id"
         ]
-    }
+    },
+    "assets": {
+        "source": "page",
+        "target": "asset",
+        "relation": "n:n",
+        "linkage_type": "foreign_key",
+        "source_key": [
+            "int",
+            "id"
+        ],
+        "target_key": [
+            "int",
+            "id"
+        ]
+    },
 
 }
 
