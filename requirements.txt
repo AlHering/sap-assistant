@@ -24,3 +24,4 @@ scrapy-inline-requests==0.3.1
 scrapy-proxies==0.4
 scrapy-proxy-pool==0.1.9
 lxml==4.9.2
+pandas==2.0.3
