@@ -14,9 +14,10 @@ from lxml import html
 import traceback
 from lxml.etree import ParseError
 from requests.exceptions import SSLError
-from scraping_service.model.website_archiver import WebsiteArchiver
-from scraping_service.configuration import configuration as cfg
-from scraping_service.utility import internet_utility, json_utility, time_utility, requests_utility
+from src.model.scraping_control.archiving.website_archiver import WebsiteArchiver
+from src.configuration import configuration as cfg
+from src.utility.bronze import json_utility, time_utility, requests_utility
+from src.utility.silver import internet_utility
 
 
 class RequestsWebsiteArchiver(WebsiteArchiver):
@@ -46,7 +47,8 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
                 if self._cache["current_index"] % 100 == 0:
                     if self._cache["last_dump"] is not None and os.path.exists(self._cache["last_dump"]):
                         os.remove(self._cache["last_dump"])
-                    self._cache["last_dump"] = self.create_state_dump("milestone")
+                    self._cache["last_dump"] = self.create_state_dump(
+                        "milestone")
                 self._handle_next_page()
         except Exception as ex:
             self.create_state_dump({
@@ -65,9 +67,9 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
         return: File path.
         """
         path = os.path.join(
-                self.profile.get("offline_copy_path", cfg.PATHS.DUMP_PATH),
-                f"EXCEPTION_{time_utility.get_timestamp()}.json"
-            )
+            self.profile.get("offline_copy_path", cfg.PATHS.DUMP_PATH),
+            f"EXCEPTION_{time_utility.get_timestamp()}.json"
+        )
         json_utility.save(
             {
                 "_cache": {key: self._cache[key] for key in self._cache if key != "session"},
@@ -93,10 +95,12 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
         """
         Internal method to handle next page.
         """
-        last_link = self._cache["children"].get(self.crawled_pages[self._cache["current_index"]], None)
+        last_link = self._cache["children"].get(
+            self.crawled_pages[self._cache["current_index"]], None)
         current_link = self.crawled_pages[self._cache["current_index"]]
         try:
-            self.logger.info(f"Fetching {current_link} under source {last_link}")
+            self.logger.info(
+                f"Fetching {current_link} under source {last_link}")
             response = self._cache["session"].get(current_link)
         except SSLError:
             self.logger.warning(f"SSL error appeared! Passing verification.")
@@ -109,12 +113,15 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
             # TODO: Implement appropriate methods on super-class level
             self.logger.warning(f"Connection error appeared! Dump created!")
             while not internet_utility.check_connection():
-                self.logger.warning(f"No internet connection! Retrying in 10 seconds ...")
+                self.logger.warning(
+                    f"No internet connection! Retrying in 10 seconds ...")
                 time.sleep(10)
             self.logger.info(f"Using proxy: '{self.next_proxy}'")
-            self._cache["session"] = requests_utility.get_session(proxy_flag=self.next_proxy)
+            self._cache["session"] = requests_utility.get_session(
+                proxy_flag=self.next_proxy)
             if isinstance(self.next_proxy, str):
-                self.next_proxy = {"torsocks": "random", "random": "torsocks"}[self.next_proxy]
+                self.next_proxy = {"torsocks": "random",
+                                   "random": "torsocks"}[self.next_proxy]
             return
         self.logger.info(f"Status: {response.status_code}")
         self.register_page(last_link, current_link, response.content)
@@ -122,7 +129,8 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
         if last_link:
             self.register_link(last_link, current_link, "page")
 
-        html_content = html.fromstring(response.content if response.content else "<!DOCTYPE html><html>")
+        html_content = html.fromstring(
+            response.content if response.content else "<!DOCTYPE html><html>")
 
         target_pages = list(
             set([self.fix_link(response.url, elem) for elem in html_content.xpath("//@href | //@src | //@data-src")]))
@@ -137,7 +145,8 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
         for link in target_assets:
             if link not in self.crawled_assets:
                 self.crawled_assets.append(link)
-                self.register_asset(current_link, link, *self.get_asset_data(link))
+                self.register_asset(current_link, link, *
+                                    self.get_asset_data(link))
             else:
                 self.register_link(current_link, link, "asset")
         for link in target_pages:

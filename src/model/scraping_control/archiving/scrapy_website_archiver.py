@@ -8,14 +8,17 @@
 from typing import Optional, Any
 import scrapy
 from scrapy import Spider
-from scraping_service.model.website_archiver import WebsiteArchiver
-from scraping_service.utility import scrapy_utility
+from src.model.scraping_control.archiving.website_archiver import WebsiteArchiver
+from src.configuration import configuration as cfg
+from src.utility.bronze import json_utility, time_utility, scrapy_utility
+from src.utility.silver import internet_utility
 
 
 class ArchiverSpider(Spider):
     """
     Archiver Spider class.
     """
+
     def __init__(self, archiver: WebsiteArchiver) -> None:
         """
         Initiation method for Archiver Spiders.
@@ -28,7 +31,8 @@ class ArchiverSpider(Spider):
         Method for crawling page.
         """
         url = response.url
-        self.archiver.register_page(response.meta.get("last_url"), url, response.body)
+        self.archiver.register_page(
+            response.meta.get("last_url"), url, response.body)
 
         target_pages = list(set([self.archiver.fix_link(url, elem) for elem in
                                  scrapy_utility.safely_get_elements(response, "//@href")]))
@@ -44,7 +48,8 @@ class ArchiverSpider(Spider):
         for link in target_assets:
             if link not in self.archiver.crawled_assets:
                 self.archiver.crawled_assets.append(link)
-                self.archiver.register_asset(url, link, *self.archiver.get_asset_data(link))
+                self.archiver.register_asset(
+                    url, link, *self.archiver.get_asset_data(link))
         for link in target_pages:
             if link not in self.archiver.crawled_pages:
                 self.archiver.crawled_pages.append(link)
@@ -59,6 +64,7 @@ class ScrapyWebsiteArchiver(WebsiteArchiver):
     """
     Website Archiver class based scrapy framework.
     """
+
     def __init__(self, profile: dict) -> None:
         """
         Initiation method for Website Archiver objects.
@@ -72,4 +78,5 @@ class ScrapyWebsiteArchiver(WebsiteArchiver):
         """
         Method for archiving website.
         """
-        scrapy_utility.start_crawl_process(ArchiverSpider, self.args, self.settings)
+        scrapy_utility.start_crawl_process(
+            ArchiverSpider, self.args, self.settings)
