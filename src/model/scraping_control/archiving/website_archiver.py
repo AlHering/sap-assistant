@@ -12,9 +12,11 @@ from urllib.parse import urlparse
 import requests
 from typing import Optional, Any, List, Union, Tuple
 from src.configuration import configuration as cfg
-from src.utility import sql_utility, dictionary_utility, internet_utility
+from src.utility.bronze import sqlalchemy_utility, dictionary_utility
+from src.utility.silver import internet_utility
 from requests.exceptions import SSLError
-from src.model import website_archiver_database, media_metadata
+from src.model.scraping_control.archiving import website_archiver_database
+from src.model.scraping_control import media_metadata
 
 
 # TODO: Basic wget-Archiver via "wget --mirror --page-requisites --convert-link --no-clobber --no-parent --domains [domains] [URL]"
