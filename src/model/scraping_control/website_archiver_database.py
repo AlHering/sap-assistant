@@ -30,26 +30,32 @@ class ArchiverDatabase(DBInterface):
             linkage_profiles=LINKAGE_PROFILE,
             view_profiles=VIEW_PROFILE)
 
-    def get_or_create_archiver(self, target_url: str, path: str, profile: dict) -> Any:
+    def get_or_create_archiver(self, url: str, path: str, profile: dict) -> Any:
         """
         Method for getting or creating archiver object.
-        :param target_url: Target URL.
+        :param url: Target URL.
         :param path: Local archive path.
         :param profile: Archiver profile.
         :return: Existing or newly created archiver object.
         """
         res = self._get("archiver", [FilterMask(
-            [["url", "==", target_url], ["profile", "==", profile]])])
-        return res if res is not None else self._post("archiver", self.model["archiver"](url=target_url, path=path, profile=profile))
+            [["url", "==", url], ["path", "==", path], ["profile", "==", profile]])])
+        return res if res is not None else self._post("archiver", self.model["archiver"](url=url, path=path, profile=profile))
 
-    def add_page(self, archiver_id: int, url: str, path: str) -> None:
+    def add_page(self, archiver: Any, url: str, path: str) -> None:
         """
         Method for adding page under archiver.
-        :param archiver_id: Archiver ID.
+        :param archiver: Archiver object.
         :param url: Page URL.
         :param path: Local path.
         """
-        pass
+        res = self._get("page", [FilterMask(
+            [["url", "==", url], ["path", "==", path]])])
+        if res is None or res.archiver_id != archiver.id:
+            res = self.model["page"](url=url, path=path)
+            res.pages = archiver
+            res = self._post("page", res)
+        return res
 
     def add_asset(self, archiver_id: int, page_id: int, url: str, path: str) -> None:
         """
