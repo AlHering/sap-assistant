@@ -30,7 +30,7 @@ class ArchiverDatabase(DBInterface):
             linkage_profiles=LINKAGE_PROFILE,
             view_profiles=VIEW_PROFILE)
 
-    def get_or_create_archiver(target_url: str, profile: dict) -> Any:
+    def get_or_create_archiver(self, target_url: str, profile: dict) -> Any:
         """
         Method for getting or creating archiver object.
         :param target_url: Target URL.
@@ -39,7 +39,7 @@ class ArchiverDatabase(DBInterface):
         """
         pass
 
-    def add_page(archiver_id: int, url: str, path: str) -> None:
+    def add_page(self, archiver_id: int, url: str, path: str) -> None:
         """
         Method for adding page under archiver.
         :param archiver_id: Archiver ID.
@@ -48,7 +48,7 @@ class ArchiverDatabase(DBInterface):
         """
         pass
 
-    def add_asset(archiver_id: int, page_id: int, url: str, path: str) -> None:
+    def add_asset(self, archiver_id: int, page_id: int, url: str, path: str) -> None:
         """
         Method for adding asset under archiver and page.
         :param archiver_id: Archiver ID.
