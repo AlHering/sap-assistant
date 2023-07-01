@@ -30,14 +30,17 @@ class ArchiverDatabase(DBInterface):
             linkage_profiles=LINKAGE_PROFILE,
             view_profiles=VIEW_PROFILE)
 
-    def get_or_create_archiver(self, target_url: str, profile: dict) -> Any:
+    def get_or_create_archiver(self, target_url: str, path: str, profile: dict) -> Any:
         """
         Method for getting or creating archiver object.
         :param target_url: Target URL.
+        :param path: Local archive path.
         :param profile: Archiver profile.
         :return: Existing or newly created archiver object.
         """
-        pass
+        res = self._get("archiver", [FilterMask(
+            [["url", "==", target_url], ["profile", "==", profile]])])
+        return res if res is not None else self._post("archiver", self.model["archiver"](url=target_url, path=path, profile=profile))
 
     def add_page(self, archiver_id: int, url: str, path: str) -> None:
         """
