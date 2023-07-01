@@ -15,9 +15,10 @@ from lxml import html
 import traceback
 from lxml.etree import ParseError
 from requests.exceptions import SSLError
-from scraping_service.model.website_archiver import WebsiteArchiver
-from scraping_service.configuration import configuration as cfg
-from scraping_service.utility import internet_utility, json_utility, time_utility, requests_utility, dictionary_utility
+from src.model.scraping_control.archiving.website_archiver import WebsiteArchiver
+from src.configuration import configuration as cfg
+from src.utility.bronze import json_utility, time_utility, dictionary_utility, requests_utility
+from src.utility.silver import internet_utility
 
 
 class RequestsWebsiteArchiver(WebsiteArchiver):
@@ -45,7 +46,8 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
         try:
             while self._cache["current_index"] < len(self.crawled_pages):
                 if self._cache["current_index"] % self._cache["milestones"] == 0:
-                    self.create_state_dump("crawling_milestone", f"MILESTONE_{self._cache['current_index']}.json")
+                    self.create_state_dump(
+                        "crawling_milestone", f"MILESTONE_{self._cache['current_index']}.json")
                 self._handle_next_page()
         except Exception as ex:
             self.create_state_dump({
@@ -53,7 +55,8 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
                 "traceback": traceback.format_exc()
             })
             raise ex
-        self.create_state_dump("collection_finished", "METADATA_collection_finished.json")
+        self.create_state_dump("collection_finished",
+                               "METADATA_collection_finished.json")
         self.relink_temporary_links()
         self.create_state_dump("relinking_finished", "METADATA_final.json")
 
@@ -92,7 +95,8 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
         """
         current_link = self.crawled_pages[0]
         try:
-            self.logger.info(f"Fetching {current_link} at index {self._cache['current_index']} with {len(self.crawled_pages)} waiting ...")
+            self.logger.info(
+                f"Fetching {current_link} at index {self._cache['current_index']} with {len(self.crawled_pages)} waiting ...")
             response = self._cache["session"].get(current_link)
         except SSLError:
             self.logger.warning(f"SSL error appeared! Passing verification.")
@@ -105,17 +109,21 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
             # TODO: Implement appropriate methods on super-class level
             self.logger.warning(f"Connection error appeared! Dump created!")
             while not internet_utility.check_connection():
-                self.logger.warning(f"No internet connection! Retrying in 10 seconds ...")
+                self.logger.warning(
+                    f"No internet connection! Retrying in 10 seconds ...")
                 time.sleep(10)
             self.logger.info(f"Using proxy: '{self.next_proxy}'")
-            self._cache["session"] = requests_utility.get_session(proxy_flag=self.next_proxy)
+            self._cache["session"] = requests_utility.get_session(
+                proxy_flag=self.next_proxy)
             if self.next_proxy in ["torsocks", "random"]:
-                self.next_proxy = {"torsocks": "random", "random": "torsocks"}[self.next_proxy]
+                self.next_proxy = {"torsocks": "random",
+                                   "random": "torsocks"}[self.next_proxy]
             return
         self.logger.info(f"Status: {response.status_code}")
         self.register_page(current_link, response.content)
 
-        html_content = html.fromstring(response.content if response.content else "<!DOCTYPE html><html>")
+        html_content = html.fromstring(
+            response.content if response.content else "<!DOCTYPE html><html>")
 
         target_pages = list(
             set([self.fix_link(response.url, elem) for elem in html_content.xpath("//@href | //@src | //@data-src")]))
@@ -130,8 +138,10 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
 
         for link in target_assets:
             if not dictionary_utility.exists(self._cache["structure"], link.split("/")):
-                self.register_asset(current_link, link, *self.get_asset_data(link))
-                dictionary_utility.set_and_extend_nested_field(self._cache["structure"], link.split("/"), {"#meta_type": "asset"})
+                self.register_asset(current_link, link, *
+                                    self.get_asset_data(link))
+                dictionary_utility.set_and_extend_nested_field(
+                    self._cache["structure"], link.split("/"), {"#meta_type": "asset"})
             else:
                 self.register_link(current_link, link, "asset")
 
@@ -142,12 +152,14 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
             link_netloc = urlparse(link).netloc
             if any(base in link_netloc for base in self.allowed_bases):
                 if not dictionary_utility.exists(self._cache["structure"], link.split("/") + ["#meta_type"]):
-                    dictionary_utility.set_and_extend_nested_field(self._cache["structure"], link.split("/"), {"#meta_type": "page"})
+                    dictionary_utility.set_and_extend_nested_field(
+                        self._cache["structure"], link.split("/"), {"#meta_type": "page"})
                     self.crawled_pages.append(link)
                 else:
                     discarded += 1
             else:
                 discarded_external += 1
-        self.logger.info(f"Discarded {discarded} internal and {discarded_external} external page links.")
+        self.logger.info(
+            f"Discarded {discarded} internal and {discarded_external} external page links.")
         self.crawled_pages = self.crawled_pages[1:]
         self._cache["current_index"] += 1
