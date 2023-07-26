@@ -5,6 +5,7 @@
 *            (c) 2023 Alexander Hering             *
 ****************************************************
 """
+import os
 from time import sleep
 import pandas
 import logging
@@ -26,8 +27,9 @@ class MediaMetadata(object):
         """
         self._logger = logging.Logger("[MediaMetadata]")
         self._logger.info(f"Initiating MediaMetadata {self}")
+        self.media_path = f"{cfg.PATHS.DATA_PATH}/processes/media_types"
         self.media = json_utility.load(
-            f"{cfg.PATHS.DATA_PATH}/media_types/media_types.json")
+            os.path.join(self.media_path, "media_types.json"))
 
     def load_metadata_from_disk(self) -> None:
         """
@@ -38,7 +40,7 @@ class MediaMetadata(object):
         for file in ["application.csv", "font.csv", "model.csv", "text.csv", "audio.csv", "image.csv",
                      "message.csv", "multipart.csv", "video.csv"]:
             self._logger.info(f"Loading metadata base from '{file}' ...")
-            df = pandas.read_csv(f"{cfg.PATHS.DATA_PATH}/media_types/{file}")
+            df = pandas.read_csv(os.path.join(self.media_path, file))
             topic = file.replace(".csv", "")
             if topic not in self.media:
                 self.media[topic] = {}
@@ -70,7 +72,7 @@ class MediaMetadata(object):
                 self._logger.info(
                     f"{self.media[file.replace('.csv', '')][row['Name']]} was retrieved.")
             json_utility.save(
-                self.media, f"{cfg.PATHS.DATA_PATH}/media_types/media_types.json")
+                self.media, os.path.join(self.media_path, "media_types.json"))
         if no_name:
             self._logger.warning(f"No name found for {len(no_name)} entries:")
             self._logger.warning(str(no_name))
@@ -127,7 +129,7 @@ class MediaMetadata(object):
                     }
                 }
         json_utility.save(
-            self.media, f"{cfg.PATHS.DATA_PATH}/media_types/media_types.json")
+            self.media, os.path.join(self.media_path, "media_types.json"))
         self._logger.info(
             "Finished metadata collection from www.freeformatter.com ...")
 
@@ -159,7 +161,7 @@ class MediaMetadata(object):
                         name: {"extension": "." + extension[0].lower()}
                     }
         json_utility.save(
-            self.media, f"{cfg.PATHS.DATA_PATH}/media_types/media_types.json")
+            self.media, os.path.join(self.media_path, "media_types.json"))
         self._logger.info(
             "Finished metadata collection from www.resplace.com ...")
 

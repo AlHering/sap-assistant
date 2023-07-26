@@ -163,4 +163,4 @@ docs/literature
 configuration/*.env
 
 # Exceptions
-!data/media_types
+!data/processes/media_types
