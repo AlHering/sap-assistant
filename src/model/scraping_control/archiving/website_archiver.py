@@ -145,7 +145,7 @@ class WebsiteArchiver(ABC):
                 offline_path = self.convert_url_to_path(
                     asset_url, asset_extension if asset_extension else ".html")
             open(offline_path, "wb").write(asset_content)
-        self.database.register_asset(self.website_id, source_url, asset_url, asset_type, str(asset_content),
+        self.database.register_asset(self.website_id, source_url, asset_url, asset_type if asset_type is not None else "unkown", str(asset_content),
                                      asset_encoding, asset_extension, offline_path)
 
     def register_link(self, source_url: str, target_url: str, target_type: str) -> None:
