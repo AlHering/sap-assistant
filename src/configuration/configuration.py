@@ -6,7 +6,8 @@
 ****************************************************
 """
 import os
-from dotenv import load_dotenv
+import logging
+from dotenv import dotenv_values
 from . import paths as PATHS
 from . import urls as URLS
 
@@ -14,4 +15,9 @@ from . import urls as URLS
 """
 Environment file
 """
-ENV = load_dotenv(os.path.join(PATHS.PACKAGE_PATH, ".env"))
+ENV = dotenv_values(os.path.join(PATHS.PACKAGE_PATH, ".env"))
+
+"""
+Logger
+"""
+LOGGER = logging.Logger("SAPAssistant")
