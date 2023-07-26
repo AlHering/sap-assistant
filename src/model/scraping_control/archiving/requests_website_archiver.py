@@ -138,10 +138,13 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
 
         for link in target_assets:
             if not dictionary_utility.exists(self._cache["structure"], link.split("/")):
-                self.register_asset(current_link, link, *
-                                    self.get_asset_data(link))
-                dictionary_utility.set_and_extend_nested_field(
-                    self._cache["structure"], link.split("/"), {"#meta_type": "asset"})
+                try:
+                    asset_data = self.get_asset_data(link)
+                    self.register_asset(current_link, link, *asset_data)
+                    dictionary_utility.set_and_extend_nested_field(
+                        self._cache["structure"], link.split("/"), {"#meta_type": "asset"})
+                except requests.exceptions.MissingSchema:
+                    self.logger.info(f"Schema exception appeared for '{link}'")
             else:
                 self.register_link(current_link, link, "asset")
 
