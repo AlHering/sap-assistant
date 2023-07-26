@@ -8,7 +8,7 @@
 import os
 from src.configuration import configuration as cfg
 from src.utility.bronze import json_utility
-from src.model.scraping_control.archiving.requests_website_archiver_v2 import RequestsWebsiteArchiver
+from src.model.scraping_control.archiving.requests_website_archiver import RequestsWebsiteArchiver
 
 if __name__ == "__main__":
 
