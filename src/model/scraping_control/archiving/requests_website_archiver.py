@@ -33,8 +33,7 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
         """
         super().__init__(profile)
         self._cache["session"] = requests.Session()
-        self._cache["structure"] = {}
-        self.crawled_pages = [self.base_url]
+        self._cache["current_url"] = None
         self._cache["current_index"] = 0
         self._cache["milestones"] = self.profile.get("milestones", 1000)
         self.next_proxy = self.profile.get("proxies", "random")
@@ -44,7 +43,7 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
         Method for archiving website.
         """
         try:
-            while self._cache["current_index"] < len(self.crawled_pages):
+            while self.get_next_url(self._cache["current_url"]) is not None:
                 if self._cache["current_index"] % self._cache["milestones"] == 0:
                     self.create_state_dump(
                         "crawling_milestone", f"MILESTONE_{self._cache['current_index']}.json")
@@ -57,8 +56,6 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
             raise ex
         self.create_state_dump("collection_finished",
                                "METADATA_collection_finished.json")
-        self.relink_temporary_links()
-        self.create_state_dump("relinking_finished", "METADATA_final.json")
 
     def create_state_dump(self, reason: Optional[Any] = None, file_name: str = "EXCEPTION.json") -> None:
         """
@@ -69,8 +66,6 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
         json_utility.save(
             {
                 "_cache": {key: self._cache[key] for key in self._cache if key != "session"},
-                "crawled_pages": self.crawled_pages,
-                "crawled_assets": self.crawled_assets,
                 "reason": reason
             },
             os.path.join(
@@ -86,27 +81,21 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
         """
         dump_data = json_utility.load(path)
         self._cache.update(dump_data["_cache"])
-        self.crawled_pages = dump_data["crawled_pages"]
-        self.crawled_assets = dump_data["crawled_assets"]
 
     def _handle_next_page(self) -> None:
         """
         Internal method to handle next page.
         """
-        current_link = self.crawled_pages[0]
+        self._cache["current_url"] = self.mark_page_as_scraped_and_get_next(
+            self._cache["current_url"])
         try:
             self.logger.info(
-                f"Fetching {current_link} at index {self._cache['current_index']} with {len(self.crawled_pages)} waiting ...")
-            response = self._cache["session"].get(current_link)
+                f"Fetching {self._cache['current_url']}")
+            response = self._cache["session"].get(self._cache["current_url"])
         except SSLError:
             self.logger.warning(f"SSL error appeared! Passing verification.")
-            response = self._cache["session"].get(current_link, verify=False)
-        except requests.exceptions.MissingSchema:
-            current_link = f"https:{current_link}"
-            self.crawled_pages[0] = current_link
-            self.logger.info(
-                f"Fetching {current_link} at index {self._cache['current_index']} with {len(self.crawled_pages)} waiting ...")
-            response = self._cache["session"].get(current_link)
+            response = self._cache["session"].get(
+                self._cache["current_url"], verify=False)
         except requests.exceptions.ConnectionError as ex:
             self.create_state_dump({
                 "exception": str(ex),
@@ -126,7 +115,7 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
                                    "random": "torsocks"}[self.next_proxy]
             return
         self.logger.info(f"Status: {response.status_code}")
-        self.register_page(current_link, response.content)
+        self.register_page(self._cache["current_url"], response.content)
 
         html_content = html.fromstring(
             response.content if response.content else "<!DOCTYPE html><html>")
@@ -146,29 +135,25 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
             if not dictionary_utility.exists(self._cache["structure"], link.split("/")):
                 try:
                     asset_data = self.get_asset_data(link)
-                    self.register_asset(current_link, link, *asset_data)
+                    self.register_asset(
+                        self._cache["current_url"], link, *asset_data)
                     dictionary_utility.set_and_extend_nested_field(
                         self._cache["structure"], link.split("/"), {"#meta_type": "asset"})
                 except requests.exceptions.MissingSchema:
                     self.logger.info(f"Schema exception appeared for '{link}'")
             else:
-                self.register_link(current_link, link, "asset")
+                self.register_link(self._cache["current_url"], link, "asset")
 
-        self.register_temporary_page_links(current_link, target_pages)
         discarded = 0
         discarded_external = 0
         for link in target_pages:
             link_netloc = urlparse(link).netloc
             if any(base in link_netloc for base in self.allowed_bases):
-                if not dictionary_utility.exists(self._cache["structure"], link.split("/") + ["#meta_type"]):
-                    dictionary_utility.set_and_extend_nested_field(
-                        self._cache["structure"], link.split("/"), {"#meta_type": "page"})
-                    self.crawled_pages.append(link)
-                else:
+                newly_created = self.register_link(
+                    self._cache["current_url"], link, "page")
+                if not newly_created:
                     discarded += 1
             else:
                 discarded_external += 1
         self.logger.info(
             f"Discarded {discarded} internal and {discarded_external} external page links.")
-        self.crawled_pages = self.crawled_pages[1:]
-        self._cache["current_index"] += 1

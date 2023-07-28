@@ -15,8 +15,9 @@ from src.configuration import configuration as cfg
 from src.utility.bronze import sqlalchemy_utility, dictionary_utility
 from src.utility.silver import internet_utility
 from requests.exceptions import SSLError
-from src.model.scraping_control.archiving import website_archiver_database
+from src.model.scraping_control.archiving import website_database
 from src.model.scraping_control import media_metadata
+from uuid import uuid4
 
 
 # TODO: Basic wget-Archiver via "wget --mirror --page-requisites --convert-link --no-clobber --no-parent --domains [domains] [URL]"
@@ -45,7 +46,7 @@ class WebsiteArchiver(ABC):
         self.logger.info(
             f"Initializing WebsiteArchiver {self} with profile: {profile}")
         # Handling data backend
-        self.database = website_archiver_database
+        self.database = website_database
         self.website_entry = self.database.get_or_create_website_entry(profile)
         self.website_id = self.website_entry.id
         self.media_handler = media_metadata.MediaMetadata()
@@ -61,8 +62,9 @@ class WebsiteArchiver(ABC):
         self.base_url_base = urlparse(self.base_url).netloc
         self.allowed_bases = self.allowed_bases if self.allowed_bases is not None else [
             self.base_url_base]
-        self.crawled_pages = []
-        self.crawled_assets = []
+        self.schemas = {}
+        self.page_counter, self.asset_counter = self.database.get_element_count(
+            self.website_id)
 
         self._cache = {}
 
@@ -112,6 +114,17 @@ class WebsiteArchiver(ABC):
         self.database.register_page(
             self.website_id, page_url, page_content, offline_path)
 
+    def get_next_url(self, page_url: str = None) -> Optional[str]:
+        """
+        Method for marking current URL as visited and retrieving next URL.
+        :param page_url: Current URL. Defaults to None in which case the base URL ist returned.
+        :return: New URL.
+        """
+        if page_url is None:
+            return self.base_url
+        else:
+            return self.database.get_next_url(self.website_id, page_url=page_url)
+
     def register_temporary_page_links(self, source_url: str, page_links: List[str]) -> None:
         """
         Method for registering temporary page links.
@@ -148,16 +161,17 @@ class WebsiteArchiver(ABC):
         self.database.register_asset(self.website_id, source_url, asset_url, asset_type if asset_type is not None else "unkown", str(asset_content),
                                      asset_encoding, asset_extension, offline_path)
 
-    def register_link(self, source_url: str, target_url: str, target_type: str) -> None:
+    def register_link(self, source_url: str, target_url: str, target_type: str) -> bool:
         """
         Method for creating or updating links.
         :param source_url: Source page URL.
         :param target_url: Target URL.
         :param target_type: Target type: Either 'page' or 'asset'.
+        :return: Flag, declaring whether link was already registered
         """
         self.logger.info(
             f"Registering link '{target_url}' ({target_type}) under '{source_url}'")
-        self.database.register_link(
+        return self.database.register_link(
             self.website_id, source_url, target_url, target_type)
 
     def fix_link(self, current_url: str, link: str) -> str:
@@ -170,7 +184,11 @@ class WebsiteArchiver(ABC):
         parsed_link = urlparse(link)
         if not parsed_link.scheme and not parsed_link.netloc:
             parsed_base = urlparse(current_url)
-            link = f"{parsed_base.scheme}://{parsed_base.netloc}/{link if not link.startswith('/') else link[1:]}"
+            if parsed_base.scheme:
+                self.schemas[parsed_base.netloc] = parsed_base.scheme
+                link = f"{parsed_base.scheme}://{parsed_base.netloc}/{link if not link.startswith('/') else link[1:]}"
+            else:
+                link = f"{self.schemas[parsed_base.netloc]}://{parsed_base.netloc}/{link if not link.startswith('/') else link[1:]}"
         return link
 
     def get_asset_data(self, asset_url: str) -> Tuple[str, bytes, str, str]:
@@ -226,10 +244,3 @@ class WebsiteArchiver(ABC):
         if not ext or ext in parsed_url.netloc:
             path_parts = f"{path_parts}{extension}"
         return path_parts
-
-    def relink_temporary_links(self) -> None:
-        """
-        Method for checking and adjusting temporary links.
-        Internal links are extracted from external link table and internal links are created off of them.
-        """
-        self.database.relink_temporary_links(self.website_id)
