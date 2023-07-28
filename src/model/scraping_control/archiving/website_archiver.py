@@ -54,7 +54,7 @@ class WebsiteArchiver(ABC):
         # Handle archiver instance variables
         self.profile = profile
         self.offline_copy_path = profile.get("offline_copy_path")
-        if not os.path.exists(self.offline_copy_path):
+        if self.offline_copy_path is not None and not os.path.exists(self.offline_copy_path):
             os.makedirs(self.offline_copy_path)
         self.base_url = profile["base_url"]
         self.allowed_bases = profile.get("allowed_bases")
