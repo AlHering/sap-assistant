@@ -28,7 +28,7 @@ class WebsiteArchiver(ABC):
     General Website Archiver class.
     """
 
-    def __init__(self, profile: dict, reload_last_state=True) -> None:
+    def __init__(self, profile: dict, reload_last_state: bool = True) -> None:
         """
         Initiation method for Website Archiver objects.
         :param profile: Archiver profile.

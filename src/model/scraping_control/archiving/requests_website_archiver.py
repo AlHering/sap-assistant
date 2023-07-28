@@ -26,12 +26,13 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
     Website Archiver class based requests framework.
     """
 
-    def __init__(self, profile: dict) -> None:
+    def __init__(self, profile: dict, reload_last_state: bool = True) -> None:
         """
         Initiation method for Website Archiver objects.
         :param profile: Archiver profile.
+        :param reload_last_state: Flag declaring whether to reload last state from cache dumps.
         """
-        super().__init__(profile)
+        super().__init__(profile=profile, reload_last_state=reload_last_state)
         self._cache["session"] = requests.Session()
         self._cache["milestones"] = self.profile.get("milestones", 1000)
         self._cache["current_url"] = self._cache.get("current_url")
