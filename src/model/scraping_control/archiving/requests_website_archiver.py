@@ -101,6 +101,12 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
         except SSLError:
             self.logger.warning(f"SSL error appeared! Passing verification.")
             response = self._cache["session"].get(current_link, verify=False)
+        except requests.exceptions.MissingSchema:
+            current_link = f"https:{current_link}"
+            self.crawled_pages[0] = current_link
+            self.logger.info(
+                f"Fetching {current_link} at index {self._cache['current_index']} with {len(self.crawled_pages)} waiting ...")
+            response = self._cache["session"].get(current_link)
         except requests.exceptions.ConnectionError as ex:
             self.create_state_dump({
                 "exception": str(ex),
