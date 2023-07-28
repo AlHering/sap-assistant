@@ -33,9 +33,9 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
         """
         super().__init__(profile)
         self._cache["session"] = requests.Session()
-        self._cache["current_url"] = None
-        self._cache["current_index"] = 0
         self._cache["milestones"] = self.profile.get("milestones", 1000)
+        self._cache["current_url"] = self._cache.get("current_url")
+        self._cache["current_index"] = self._cache.get("current_url", 0)
         self.next_proxy = self.profile.get("proxies", "random")
 
     def archive_website(self) -> None:
@@ -55,7 +55,7 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
             })
             raise ex
         self.create_state_dump("collection_finished",
-                               "METADATA_collection_finished.json")
+                               f"MILESTONE_{self._cache['current_index']}_FINISHED.json")
 
     def create_state_dump(self, reason: Optional[Any] = None, file_name: str = "EXCEPTION.json") -> None:
         """
@@ -69,7 +69,7 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
                 "reason": reason
             },
             os.path.join(
-                self.profile.get("offline_copy_path", cfg.PATHS.DUMP_PATH),
+                self.dump_folder,
                 file_name
             )
         )
@@ -157,3 +157,4 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
                 discarded_external += 1
         self.logger.info(
             f"Discarded {discarded} internal and {discarded_external} external page links.")
+        self._cache["current_index"] += 1
