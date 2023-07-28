@@ -28,7 +28,7 @@ class WebsiteArchiver(ABC):
     General Website Archiver class.
     """
 
-    def __init__(self, profile: dict) -> None:
+    def __init__(self, profile: dict, reload_last_state=True) -> None:
         """
         Initiation method for Website Archiver objects.
         :param profile: Archiver profile.
@@ -41,6 +41,7 @@ class WebsiteArchiver(ABC):
                 - spider configuration in case of scrapy
             'offline_copy_path': Optional. Results in the creation of an offline copy with the given path as root
                 folder.
+        :param reload_last_state: Flag declaring whether to reload last state from cache dumps.
         """
         self.logger = cfg.LOGGER
         self.logger.info(
@@ -48,7 +49,7 @@ class WebsiteArchiver(ABC):
         # Handling data backend
         self.database = website_database
         self.website_entry = self.database.get_or_create_website_entry(profile)
-        self.website_id = self.website_entry.id
+        self.website_id = str(self.website_entry.id)
         self.media_handler = media_metadata.MediaMetadata()
         self.media_metadata = self.media_handler.media
 
@@ -66,7 +67,18 @@ class WebsiteArchiver(ABC):
         self.page_counter, self.asset_counter = self.database.get_element_count(
             self.website_id)
 
+        # Handle cache
+        self.dump_folder = self.profile.get("dump_path", os.path.join(
+            cfg.PATHS.DUMP_PATH, "website_archiver", self.website_id))
+        if not os.path.exists(self.dump_folder):
+            os.makedirs(self.dump_folder)
         self._cache = {}
+        if reload_last_state:
+            for root, dirs, files in os.walk(self.dump_folder, topdown=True):
+                dumped_caches = [
+                    file for file in files if file.startswith("MILESTONE")]
+                self.load_state_dump(os.path.join(root, dumped_caches[-1]))
+                break
 
     @abstractmethod
     def archive_website(self, *args: Optional[Any], **kwargs: Optional[Any]) -> None:
