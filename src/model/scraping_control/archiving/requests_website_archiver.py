@@ -36,7 +36,7 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
         self._cache["session"] = requests.Session()
         self._cache["milestones"] = self.profile.get("milestones", 1000)
         self._cache["current_url"] = self._cache.get("current_url")
-        self._cache["current_index"] = self._cache.get("current_url", 0)
+        self._cache["current_index"] = self._cache.get("current_index", 0)
         self.next_proxy = self.profile.get("proxies", "random")
 
     def archive_website(self) -> None:
