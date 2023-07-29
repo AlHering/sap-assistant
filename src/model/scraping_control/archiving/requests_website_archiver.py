@@ -35,6 +35,7 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
         super().__init__(profile=profile, reload_last_state=reload_last_state)
         self._cache["session"] = requests.Session()
         self._cache["milestones"] = self.profile.get("milestones", 1000)
+        self._cache["last_url"] = self._cache.get("last_url")
         self._cache["current_url"] = self._cache.get("current_url")
         self._cache["current_index"] = self._cache.get("current_index", 0)
         self.next_proxy = self.profile.get("proxies", "random")
@@ -50,6 +51,7 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
                     self.create_state_dump(
                         "crawling_milestone", f"MILESTONE_{self._cache['current_index']}.json")
                 self._handle_next_page(next_url)
+                self._cache["last_url"] = self._cache["current_url"]
                 next_url = self.get_next_url(self._cache["current_url"])
         except Exception as ex:
             self.create_state_dump({
@@ -99,6 +101,11 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
             self.logger.warning(f"SSL error appeared! Passing verification.")
             response = self._cache["session"].get(
                 self._cache["current_url"], verify=False)
+        except requests.exceptions.MissingSchema:
+            self.logger.warning(f"Missing schema! Trying to fix URL.")
+            self._cache["current_url"] = self.fix_link(
+                self._cache["last_url"], self._cache["current_url"])
+            response = self._cache["session"].get(self._cache["current_url"])
         except requests.exceptions.ConnectionError as ex:
             self.create_state_dump({
                 "exception": str(ex),
@@ -142,6 +149,9 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
                     self._cache["current_url"], link, *asset_data)
             except requests.exceptions.MissingSchema:
                 self.logger.info(f"Schema exception appeared for '{link}'")
+            except requests.exceptions.ConnectionError:
+                self.logger.info(
+                    f"ConnectionError exception appeared for '{link}'")
 
         discarded = 0
         discarded_external = 0
