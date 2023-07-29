@@ -65,7 +65,7 @@ class WebsiteArchiver(ABC):
             self.base_url_base]
         self.schemas = {}
         self.page_counter, self.asset_counter = self.database.get_element_count(
-            self.website_id)
+            self.website_id, )
 
         # Handle cache
         self.dump_folder = self.profile.get("dump_path", os.path.join(
