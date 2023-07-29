@@ -14,7 +14,7 @@ from src.control.plugin_controller import PluginController
 
 
 # TODO: Modularize database interaction
-LOGGER = logging.Logger("[WebsiteArchiverDB]")
+LOGGER = cfg.LOGGER
 LOGGER.info("Automapping existing structures")
 BASE = automap_base()
 ENGINE = sqlalchemy_utility.get_engine(cfg.ENV["WEBSITE_ARCHIVER_DB"])
@@ -337,6 +337,8 @@ def register_page(website_id: str, page_url: str, page_content: str = None,
             MODEL[f"{website_id}.pages"].page_url == page_url
         ).first()
         if page is None:
+            LOGGER.info(
+                f"Found already registered page for website {website_id}: {page_url}")
             page = MODEL[f"{website_id}.pages"](
                 page_url=page_url, inactive="")
             session.add(page)
@@ -388,7 +390,12 @@ def register_asset(website_id: str, source_url: str, asset_url: str, asset_type:
                 asset_url=asset_url, asset_type=asset_type)
             session.add(asset)
         elif asset.inactive != "":
+            LOGGER.info(
+                f"Found already registered inactivate asset for website {website_id}: {asset_url}")
             asset.inactive = ""
+        else:
+            LOGGER.info(
+                f"Found already registered asset for website {website_id}: {asset_url}")
 
         asset.updated = datetime.datetime.now()
         session.commit()
@@ -453,31 +460,17 @@ def register_link(website_id: str, source_url: str, target_url: str, target_type
         f"Registering link for website {website_id}: {source_url} -> {target_url} ({target_type})")
     target_column = getattr(
         MODEL[f"{website_id}.{target_type}_network"], f"target_{target_type}_url")
-    target = None
     link = None
     with SESSION_FACTORY() as session:
-        source_page = session.query(MODEL[f"{website_id}.pages"]).filter(
+        link = session.query(MODEL[f"{website_id}.{target_type}_network"]).filter(
             sqlalchemy_utility.SQLALCHEMY_FILTER_CONVERTER["&&"](
-                MODEL[f"{website_id}.pages"].page_url == source_url)
+                MODEL[f"{website_id}.{target_type}_network"].source_page_url == source_url,
+                target_column == target_url
+            )
         ).first()
-        if source_page.inactive != "":
-            source_page.inactive = ""
-
-        target = session.query(MODEL[f"{website_id}.{target_type}s"]).filter(
-            getattr(MODEL[f"{website_id}.{target_type}s"],
-                    f"{target_type}_url") == target_url
-        ).first()
-        if target is not None:
-            target_url = getattr(target, f"{target_type}_url")
-            link = session.query(MODEL[f"{website_id}.{target_type}_network"]).filter(
-                sqlalchemy_utility.SQLALCHEMY_FILTER_CONVERTER["&&"](
-                    MODEL[f"{website_id}.{target_type}_network"].source_page_url == source_page.page_url,
-                    target_column == target_url
-                )
-            ).first()
         if link is None:
             creation_kwargs = {
-                "source_page_url": source_page.page_url,
+                "source_page_url": source_url,
                 f"target_{target_type}_url": target_url
             }
             if target_type == "page":
@@ -485,8 +478,9 @@ def register_link(website_id: str, source_url: str, target_url: str, target_type
             session.add(MODEL[f"{website_id}.{target_type}_network"](
                 **creation_kwargs
             ))
-
         else:
+            LOGGER.info(
+                f"Found already registered link for {source_url} -> {target_url}")
             link.updated = datetime.datetime.now()
             link.inactive = ""
         session.commit()
