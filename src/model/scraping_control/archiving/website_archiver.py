@@ -141,16 +141,16 @@ class WebsiteArchiver(ABC):
         else:
             return self.database.get_next_url(self.website_id, page_url=page_url)
 
-    def register_temporary_page_links(self, source_url: str, page_links: List[str]) -> None:
+    def check_for_existing_asset(self, asset_url: str) -> bool:
         """
-        Method for registering temporary page links.
-        :param source_url: Source page URL.
-        :param page_links: Target links.
+        Method for checking for existing asset registration.
+        :param asset_url: Asset URL.
+        :return: True if asset registration is found else False.
         """
         self.logger.info(
-            f"Registering {len(page_links)} temporary page links '{source_url}'")
-        self.database.register_temporary_page_links(
-            self.website_id, source_url, page_links)
+            f"Checking for existing asset '{asset_url}'")
+        self.database.check_for_existence(
+            self.website_id, asset_url, "asset")
 
     def register_asset(self, source_url: str, asset_url: str, asset_type: str, asset_content: bytes = None,
                        asset_encoding: str = None, asset_extension: str = None, offline_path: str = None) -> None:
