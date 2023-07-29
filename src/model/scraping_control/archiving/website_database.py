@@ -8,7 +8,7 @@ import datetime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from src.configuration import configuration as cfg
-from src.utility.bronze import dictionary_utility, sqlalchemy_utility
+from src.utility.bronze import dictionary_utility, sqlalchemy_utility, time_utility
 import logging
 from src.control.plugin_controller import PluginController
 
@@ -313,7 +313,9 @@ def add_website_to_archiver(profile: dict) -> Any:
     LOGGER.info(f"Adding website with {profile}")
     with SESSION_FACTORY() as session:
         website = MODEL["website"](
-            base_url=profile["base_url"], profile=profile)
+            base_url=profile["base_url"],
+            profile=profile,
+            created=datetime.datetime.now())
         session.add(website)
         session.commit()
         session.refresh(website)
@@ -337,6 +339,8 @@ def get_or_create_website_entry(profile: dict) -> Any:
         MODEL["website"].base_url == profile["base_url"])
     for entry in website_entries:
         if dictionary_utility.check_equality(entry.profile, profile):
+            entry.updated = datetime.datetime.now()
+            session.commit()
             return entry
     return add_website_to_archiver(profile)
 
@@ -359,7 +363,7 @@ def register_page(website_id: str, page_url: str, page_content: str = None,
             LOGGER.info(
                 f"Found already registered page for website {website_id}: {page_url}")
             page = MODEL[f"{website_id}.pages"](
-                page_url=page_url, inactive="")
+                page_url=page_url, created=datetime.datetime.now(), inactive="")
             session.add(page)
         elif page.inactive != "":
             page.inactive = ""
@@ -377,7 +381,8 @@ def register_page(website_id: str, page_url: str, page_content: str = None,
                 if raw_page.inactive == "":
                     raw_page.inactive = "x"
                     raw_page.updated = datetime.datetime.now()
-            new_raw_page = MODEL[f"{website_id}.raw_pages"](page_id=page_url)
+            new_raw_page = MODEL[f"{website_id}.raw_pages"](
+                page_id=page_url, created=datetime.datetime.now())
             if page_content is not None:
                 new_raw_page.raw = page_content
             if page_path is not None:
@@ -406,7 +411,7 @@ def register_asset(website_id: str, source_url: str, asset_url: str, asset_type:
         ).first()
         if asset is None:
             asset = MODEL[f"{website_id}.assets"](
-                asset_url=asset_url, asset_type=asset_type)
+                asset_url=asset_url, asset_type=asset_type, created=datetime.datetime.now())
             session.add(asset)
         elif asset.inactive != "":
             LOGGER.info(
@@ -430,7 +435,8 @@ def register_asset(website_id: str, source_url: str, asset_url: str, asset_type:
                     raw_asset.inactive = "x"
                     raw_asset.updated = datetime.datetime.now()
             new_raw_asset = MODEL[f"{website_id}.raw_assets"](
-                asset_id=asset.asset_id
+                asset_id=asset.asset_id,
+                created=datetime.datetime.now()
             )
             if asset_content is not None:
                 new_raw_asset.raw = asset_content
@@ -447,6 +453,7 @@ def register_asset(website_id: str, source_url: str, asset_url: str, asset_type:
                     MODEL[f"{website_id}.pages"].page_url == source_url)
             ).first()
             if source_page.inactive != "":
+                source_page.updated = datetime.datetime.now()
                 source_page.inactive = ""
 
             link = session.query(MODEL[f"{website_id}.asset_network"]).filter(
@@ -458,7 +465,8 @@ def register_asset(website_id: str, source_url: str, asset_url: str, asset_type:
             if link is None:
                 link = MODEL[f"{website_id}.asset_network"](
                     source_page_url=source_page.page_url,
-                    target_asset_url=asset.asset_url
+                    target_asset_url=asset.asset_url,
+                    created=datetime.datetime.now()
                 )
                 session.add(link)
             elif link.inactive != "":
@@ -490,7 +498,8 @@ def register_link(website_id: str, source_url: str, target_url: str, target_type
         if link is None:
             creation_kwargs = {
                 "source_page_url": source_url,
-                f"target_{target_type}_url": target_url
+                f"target_{target_type}_url": target_url,
+                "created": datetime.datetime.now()
             }
             if target_type == "page":
                 creation_kwargs["followed"] = False
