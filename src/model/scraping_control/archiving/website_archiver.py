@@ -74,10 +74,11 @@ class WebsiteArchiver(ABC):
             os.makedirs(self.dump_folder)
         self._cache = {}
         if reload_last_state:
-            for root, dirs, files in os.walk(self.dump_folder, topdown=True):
+            for root, _, files in os.walk(self.dump_folder, topdown=True):
                 dumped_caches = [
                     file for file in files if file.startswith("MILESTONE")]
-                self.load_state_dump(os.path.join(root, dumped_caches[-1]))
+                if dumped_caches:
+                    self.load_state_dump(os.path.join(root, dumped_caches[-1]))
                 break
 
     @abstractmethod
