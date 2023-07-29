@@ -489,7 +489,7 @@ def register_link(website_id: str, source_url: str, target_url: str, target_type
         return link is None
 
 
-def get_element_count(website_id: str, source_url: str, target_url: str, target_type: str) -> Tuple[int, int]:
+def get_element_count(website_id: str) -> Tuple[int, int]:
     """
     Function for creating or updating links.
     :param website_id: Website ID.
