@@ -21,3 +21,4 @@ ENV = dotenv_values(os.path.join(PATHS.PACKAGE_PATH, ".env"))
 Logger
 """
 LOGGER = logging.Logger("SAPAssistant")
+LOGGER.setLevel(logging.DEBUG)
