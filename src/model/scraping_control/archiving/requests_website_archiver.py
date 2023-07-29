@@ -87,7 +87,7 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
         """
         Internal method to handle next page.
         """
-        self._cache["current_url"] = self.mark_page_as_scraped_and_get_next(
+        self._cache["current_url"] = self.get_next_url(
             self._cache["current_url"])
         try:
             self.logger.info(
