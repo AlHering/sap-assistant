@@ -1,6 +1,5 @@
 from sqlalchemy import MetaData, Table, Column, String, Boolean, Integer, JSON, Text, DateTime, CHAR, ForeignKey, Table, \
-    Float, \
-    BLOB, TEXT, func, inspect, select
+    Float, BLOB, TEXT, func, inspect, select, text
 from sqlalchemy import and_, or_, not_
 from sqlalchemy.ext.automap import automap_base, classname_for_table
 from typing import Any, Union, List, Tuple, Optional
@@ -497,10 +496,10 @@ def get_element_count(website_id: str) -> Tuple[int, int]:
     """
     LOGGER.info(
         f"Counting {website_id}'s tracked elements...")
-    page_count = int(select([func.count()]).select_from(
-        MODEL[f"{website_id}.pages"]).as_scalar())
-    asset_count = int(select([func.count()]).select_from(
-        MODEL[f"{website_id}.assets"]).as_scalar())
+    page_count = int(ENGINE.connect().execute(select(func.count()).select_from(
+        MODEL[f"{website_id}.pages"])).scalar())
+    asset_count = int(ENGINE.connect().execute(select(func.count()).select_from(
+        MODEL[f"{website_id}.assets"])).scalar())
     return page_count, asset_count
 
 
