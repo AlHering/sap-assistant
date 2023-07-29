@@ -133,17 +133,15 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
             target_pages.remove(page_link)
 
         for link in target_assets:
-            if not dictionary_utility.exists(self._cache["structure"], link.split("/")):
-                try:
-                    asset_data = self.get_asset_data(link)
-                    self.register_asset(
-                        self._cache["current_url"], link, *asset_data)
-                    dictionary_utility.set_and_extend_nested_field(
-                        self._cache["structure"], link.split("/"), {"#meta_type": "asset"})
-                except requests.exceptions.MissingSchema:
-                    self.logger.info(f"Schema exception appeared for '{link}'")
-            else:
-                self.register_link(self._cache["current_url"], link, "asset")
+            self.register_link(self._cache["current_url"], link, "asset")
+            try:
+                asset_data = self.get_asset_data(link)
+                self.register_asset(
+                    self._cache["current_url"], link, *asset_data)
+                dictionary_utility.set_and_extend_nested_field(
+                    self._cache["structure"], link.split("/"), {"#meta_type": "asset"})
+            except requests.exceptions.MissingSchema:
+                self.logger.info(f"Schema exception appeared for '{link}'")
 
         discarded = 0
         discarded_external = 0
