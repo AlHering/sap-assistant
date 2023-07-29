@@ -79,7 +79,7 @@ def generate_archiving_tables(website_id: str) -> None:
     :param website_id: Website stem (with underscores instead of dots).
     """
     LOGGER.info(f"Generating archiving tables for website {website_id}")
-    website_id = str(website_id.replace(".", "_"))
+    website_id = str(website_id)
 
     class Page(BASE):
         """
