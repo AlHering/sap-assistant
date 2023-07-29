@@ -140,8 +140,6 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
                 asset_data = self.get_asset_data(link)
                 self.register_asset(
                     self._cache["current_url"], link, *asset_data)
-                dictionary_utility.set_and_extend_nested_field(
-                    self._cache["structure"], link.split("/"), {"#meta_type": "asset"})
             except requests.exceptions.MissingSchema:
                 self.logger.info(f"Schema exception appeared for '{link}'")
 
