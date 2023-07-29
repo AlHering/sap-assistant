@@ -509,8 +509,8 @@ def register_link(website_id: str, source_url: str, target_url: str, target_type
         else:
             LOGGER.info(
                 f"Found already registered link for {source_url} -> {target_url}")
-            link.updated = datetime.datetime.now()
             link.inactive = ""
+            link.updated = datetime.datetime.now()
         session.commit()
         return link is None
 
@@ -547,17 +547,15 @@ def get_next_url(website_id: str, page_url: str) -> Optional[str]:
         ).all()
         for entry in followed:
             entry.followed = True
+            entry.updated = datetime.datetime.now()
         session.commit()
         LOGGER.info(f"Updated {website_id}: {page_url} links")
 
         next_page_link = session.query(MODEL[f"{website_id}.page_network"]).filter(
             MODEL[f"{website_id}.page_network"].followed == False
         ).first()
-        next_page_link.followed = True
-        session.commit()
-        session.refresh(next_page_link)
-        next_page = next_page_link.target_page_url
-
+        if next_page_link:
+            next_page = next_page_link.target_page_url
     return next_page
 
 
