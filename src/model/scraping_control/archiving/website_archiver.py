@@ -28,7 +28,7 @@ class WebsiteArchiver(ABC):
     General Website Archiver class.
     """
 
-    def __init__(self, profile: dict, reload_last_state: bool = True) -> None:
+    def __init__(self, profile: dict, reload_last_state: bool = True, redownload_assets: bool = False) -> None:
         """
         Initiation method for Website Archiver objects.
         :param profile: Archiver profile.
@@ -41,7 +41,8 @@ class WebsiteArchiver(ABC):
                 - spider configuration in case of scrapy
             'offline_copy_path': Optional. Results in the creation of an offline copy with the given path as root
                 folder.
-        :param reload_last_state: Flag declaring whether to reload last state from cache dumps.
+        :param reload_last_state: Flag for declaring whether to reload last state from cache dumps.
+        :param reload_assets: Flag for declaring whether to redownloading assets.
         """
         self.logger = cfg.LOGGER
         self.logger.info(
@@ -66,6 +67,8 @@ class WebsiteArchiver(ABC):
         self.schemas = {}
         self.page_counter, self.asset_counter = self.database.get_element_count(
             self.website_id, )
+        self.redownload_assets = profile.get(
+            "redownload_assets", redownload_assets)
 
         # Handle cache
         self.dump_folder = self.profile.get("dump_path", os.path.join(
