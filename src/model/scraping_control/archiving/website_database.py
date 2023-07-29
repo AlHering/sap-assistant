@@ -453,6 +453,8 @@ def register_link(website_id: str, source_url: str, target_url: str, target_type
         f"Registering link for website {website_id}: {source_url} -> {target_url} ({target_type})")
     target_column = getattr(
         MODEL[f"{website_id}.{target_type}_network"], f"target_{target_type}_url")
+    target = None
+    link = None
     with SESSION_FACTORY() as session:
         source_page = session.query(MODEL[f"{website_id}.pages"]).filter(
             sqlalchemy_utility.SQLALCHEMY_FILTER_CONVERTER["&&"](
@@ -465,20 +467,23 @@ def register_link(website_id: str, source_url: str, target_url: str, target_type
             getattr(MODEL[f"{website_id}.{target_type}s"],
                     f"{target_type}_url") == target_url
         ).first()
-        target_url = getattr(target, f"{target_type}_url")
-        link = session.query(MODEL[f"{website_id}.{target_type}_network"]).filter(
-            sqlalchemy_utility.SQLALCHEMY_FILTER_CONVERTER["&&"](
-                MODEL[f"{website_id}.{target_type}_network"].source_page_url == source_page.page_url,
-                target_column == target_url
-            )
-        ).first()
+        if target is not None:
+            target_url = getattr(target, f"{target_type}_url")
+            link = session.query(MODEL[f"{website_id}.{target_type}_network"]).filter(
+                sqlalchemy_utility.SQLALCHEMY_FILTER_CONVERTER["&&"](
+                    MODEL[f"{website_id}.{target_type}_network"].source_page_url == source_page.page_url,
+                    target_column == target_url
+                )
+            ).first()
         if link is None:
-            creation_args = {
+            creation_kwargs = {
                 "source_page_url": source_page.page_url,
                 f"target_{target_type}_url": target_url
             }
+            if target_type == "page":
+                creation_kwargs["followed"] = False
             session.add(MODEL[f"{website_id}.{target_type}_network"](
-                **creation_args
+                **creation_kwargs
             ))
 
         else:
@@ -523,7 +528,7 @@ def get_next_url(website_id: str, page_url: str) -> Optional[str]:
         session.commit()
         LOGGER.info(f"Updated {website_id}: {page_url} links")
 
-        next_page_link = session.query(MODEL[f"{website_id}.pages"]).filter(
+        next_page_link = session.query(MODEL[f"{website_id}.page_network"]).filter(
             MODEL[f"{website_id}.page_network"].followed == False
         ).first()
         next_page_link.followed = True
