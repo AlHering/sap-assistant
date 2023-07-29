@@ -212,6 +212,8 @@ class WebsiteArchiver(ABC):
                 link = f"{parsed_base.scheme}://{link if not link.startswith('//') else link[2:]}"
             else:
                 link = f"{self.schemas[parsed_base.netloc]}://{link if not link.startswith('//') else link[2:]}"
+        if "\\" in link:
+            link = link.replace("\\", "")
         return link
 
     def get_asset_data(self, asset_url: str) -> Tuple[str, bytes, str, str]:
