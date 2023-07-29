@@ -532,3 +532,27 @@ def get_next_url(website_id: str, page_url: str) -> Optional[str]:
         next_page = next_page_link.target_page_url
 
     return next_page
+
+
+def check_for_existence(website_id: str, url: str, target_type: str) -> bool:
+    """
+    Function for marking current URL as visited and retrieving next target URL.
+    :param website_id: Website ID.
+    :param url: Target URL.
+    :param target_type: Target type: Either 'page' or 'asset'.
+    :return: Flag, declaring whether target was already registered.
+    """
+    LOGGER.info(f"Checking for existence {website_id}: {url} ({target_type})")
+    found = False
+    url_column = getattr(
+        MODEL[f"{website_id}.{target_type}s"], f"{target_type}_url")
+    inactive_column = getattr(
+        MODEL[f"{website_id}.{target_type}s"], f"inactive")
+    with SESSION_FACTORY() as session:
+        entry = session.query(MODEL[f"{website_id}.page_network"]).filter(
+            sqlalchemy_utility.SQLALCHEMY_FILTER_CONVERTER["&&"](
+                url_column == False,
+                inactive_column == "")
+        ).first()
+        found = entry is not None
+    return found
