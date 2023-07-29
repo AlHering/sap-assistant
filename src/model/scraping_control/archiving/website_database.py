@@ -81,6 +81,25 @@ def generate_archiving_tables(website_id: str) -> None:
     LOGGER.info(f"Generating archiving tables for website {website_id}")
     website_id = str(website_id)
 
+    class Run(BASE):
+        """
+        Page dataclass, representing a scraping run of a website.
+        """
+        __tablename__ = f"{website_id}.runs"
+        __table_args__ = {"comment": "Website Run Table."}
+
+        run_id = Column(Integer, primary_key=True, autoincrement=True, unique=True, nullable=False,
+                        comment="ID of the run.")
+        metadata = Column(JSON, nullable=True,
+                          comment="Metadata of run.")
+
+        started = Column(DateTime, default=func.now(),
+                         comment="Starting timestamp.")
+        updated = Column(DateTime, onupdate=func.now(),
+                         comment="Timestamp of last update.")
+        finished = Column(DateTime, nullable=True,
+                          comment="Finishing timestamp.")
+
     class Page(BASE):
         """
         Page dataclass, representing a page of a website.
