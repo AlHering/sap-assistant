@@ -44,11 +44,13 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
         Method for archiving website.
         """
         try:
-            while self.get_next_url(self._cache["current_url"]) is not None:
+            next_url = self.get_next_url(self._cache["current_url"])
+            while next_url is not None:
                 if self._cache["current_index"] % self._cache["milestones"] == 0:
                     self.create_state_dump(
                         "crawling_milestone", f"MILESTONE_{self._cache['current_index']}.json")
-                self._handle_next_page()
+                self._handle_next_page(next_url)
+                next_url = self.get_next_url(self._cache["current_url"])
         except Exception as ex:
             self.create_state_dump({
                 "exception": str(ex),
@@ -83,12 +85,12 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
         dump_data = json_utility.load(path)
         self._cache.update(dump_data["_cache"])
 
-    def _handle_next_page(self) -> None:
+    def _handle_next_page(self, next_url: str) -> None:
         """
         Internal method to handle next page.
+        :param next_url: Next page URL.
         """
-        self._cache["current_url"] = self.get_next_url(
-            self._cache["current_url"])
+        self._cache["current_url"] = next_url
         try:
             self.logger.info(
                 f"Fetching {self._cache['current_url']}")
