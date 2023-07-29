@@ -198,13 +198,20 @@ class WebsiteArchiver(ABC):
         :return: Fixed link.
         """
         parsed_link = urlparse(link)
-        if not parsed_link.scheme and not parsed_link.netloc:
+        if not parsed_link.netloc:
             parsed_base = urlparse(current_url)
             if parsed_base.scheme:
                 self.schemas[parsed_base.netloc] = parsed_base.scheme
                 link = f"{parsed_base.scheme}://{parsed_base.netloc}/{link if not link.startswith('/') else link[1:]}"
             else:
                 link = f"{self.schemas[parsed_base.netloc]}://{parsed_base.netloc}/{link if not link.startswith('/') else link[1:]}"
+        elif not parsed_link.scheme:
+            parsed_base = urlparse(current_url)
+            if parsed_base.scheme:
+                self.schemas[parsed_base.netloc] = parsed_base.scheme
+                link = f"{parsed_base.scheme}://{link if not link.startswith('//') else link[2:]}"
+            else:
+                link = f"{self.schemas[parsed_base.netloc]}://{link if not link.startswith('//') else link[2:]}"
         return link
 
     def get_asset_data(self, asset_url: str) -> Tuple[str, bytes, str, str]:
