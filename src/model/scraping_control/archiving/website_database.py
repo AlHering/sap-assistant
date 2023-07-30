@@ -538,7 +538,7 @@ def get_next_url(website_id: str, page_url: str) -> Optional[str]:
     :return: Next target URL if found, else None.
     """
     LOGGER.info(f"Finished {website_id}: {page_url}")
-    next_page = None
+    result_link = None
     with SESSION_FACTORY() as session:
         followed = session.query(MODEL[f"{website_id}.page_network"]).filter(
             sqlalchemy_utility.SQLALCHEMY_FILTER_CONVERTER["&&"](
@@ -551,12 +551,29 @@ def get_next_url(website_id: str, page_url: str) -> Optional[str]:
         session.commit()
         LOGGER.info(f"Updated {website_id}: {page_url} links")
 
-        next_page_link = session.query(MODEL[f"{website_id}.page_network"]).filter(
-            MODEL[f"{website_id}.page_network"].followed == False
-        ).first()
-        if next_page_link:
-            next_page = next_page_link.target_page_url
-    return next_page
+        while next_link is None:
+            next_link = session.query(MODEL[f"{website_id}.page_network"]).filter(
+                MODEL[f"{website_id}.page_network"].followed == False
+            ).first()
+            if next_link is None:
+                break
+
+            alredy_visited = session.query(MODEL[f"{website_id}.page_network"]).filter(
+                sqlalchemy_utility.SQLALCHEMY_FILTER_CONVERTER["&&"](
+                    MODEL[f"{website_id}.page_network"].followed == True,
+                    MODEL[f"{website_id}.page_network"].target_page_url == next_link.target_page_url)
+            ).first()
+            if alredy_visited is not None:
+                for alredy_visited in session.query(MODEL[f"{website_id}.page_network"]).filter(
+                    sqlalchemy_utility.SQLALCHEMY_FILTER_CONVERTER["&&"](
+                        MODEL[f"{website_id}.page_network"].followed == False,
+                        MODEL[f"{website_id}.page_network"].target_page_url == next_page_link.target_page_url)
+                ).all():
+                    alredy_visited.followed = True
+                    alredy_visited.updated = datetime.datetime.now()
+                session.commit()
+                next_link = None
+    return next_link
 
 
 def check_for_existence(website_id: str, url: str, target_type: str) -> bool:
