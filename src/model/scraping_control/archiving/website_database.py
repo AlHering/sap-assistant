@@ -567,7 +567,7 @@ def get_next_url(website_id: str, page_url: str) -> Optional[str]:
                 for alredy_visited in session.query(MODEL[f"{website_id}.page_network"]).filter(
                     sqlalchemy_utility.SQLALCHEMY_FILTER_CONVERTER["&&"](
                         MODEL[f"{website_id}.page_network"].followed == False,
-                        MODEL[f"{website_id}.page_network"].target_page_url == next_page_link.target_page_url)
+                        MODEL[f"{website_id}.page_network"].target_page_url == next_link.target_page_url)
                 ).all():
                     alredy_visited.followed = True
                     alredy_visited.updated = datetime.datetime.now()
