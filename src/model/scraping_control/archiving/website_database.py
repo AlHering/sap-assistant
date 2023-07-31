@@ -538,7 +538,7 @@ def get_next_url(website_id: str, page_url: str) -> Optional[str]:
     :return: Next target URL if found, else None.
     """
     LOGGER.info(f"Finished {website_id}: {page_url}")
-    result_link = None
+    next_link = None
     with SESSION_FACTORY() as session:
         followed = session.query(MODEL[f"{website_id}.page_network"]).filter(
             sqlalchemy_utility.SQLALCHEMY_FILTER_CONVERTER["&&"](
@@ -573,6 +573,8 @@ def get_next_url(website_id: str, page_url: str) -> Optional[str]:
                     alredy_visited.updated = datetime.datetime.now()
                 session.commit()
                 next_link = None
+            else:
+                next_link = next_link.target_page_url
     return next_link
 
 
