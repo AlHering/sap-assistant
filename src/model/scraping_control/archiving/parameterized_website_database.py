@@ -346,7 +346,7 @@ class WebsiteDatabase(object):
         if website is None:
             return
 
-        generate_archiving_tables(website.id)
+        self.generate_archiving_tables(website.id)
         return website
 
     def get_or_create_website_entry(self, profile: dict) -> Any:
@@ -364,7 +364,7 @@ class WebsiteDatabase(object):
                 entry.updated = datetime.datetime.now()
                 session.commit()
                 return entry
-        return add_website_to_archiver(profile)
+        return self.add_website_to_archiver(profile)
 
     def register_page(self, website_id: str, page_url: str, page_content: str = None,
                       page_path: str = None) -> None:
