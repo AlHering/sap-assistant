@@ -78,3 +78,19 @@ def get_all_folders(path: str) -> List[str]:
         for folder in dirs:
             folder_list.append(os.path.join(root, folder))
     return list(set(folder_list))
+
+
+def clean_directory_name(directory: str) -> str:
+    """
+    Replaces os reserved characters in folder names with "-" and "_" (windows and linux).
+    :param directory: Directory name to clean.
+    :return: Cleaned directory name.
+    """
+    ret = directory
+    score = ".<>:*"
+    under_score = "/\\|?"
+    for elem in score:
+        ret = ret.replace(elem, "-")
+    for elem in under_score:
+        ret = ret.replace(elem, "_")
+    return ret
