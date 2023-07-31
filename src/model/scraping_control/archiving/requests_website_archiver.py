@@ -95,7 +95,7 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
         self._cache["current_url"] = next_url
         try:
             self.logger.info(
-                f"Fetching {self._cache['current_url']}")
+                f"Fetching {self._cache['current_url']} ({self._cache['current_index']})")
             response = self._cache["session"].get(self._cache["current_url"])
         except SSLError:
             self.logger.warning(f"SSL error appeared! Passing verification.")
