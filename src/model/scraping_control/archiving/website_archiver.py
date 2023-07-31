@@ -15,7 +15,7 @@ from src.configuration import configuration as cfg
 from src.utility.bronze import sqlalchemy_utility, dictionary_utility
 from src.utility.silver import internet_utility
 from requests.exceptions import SSLError
-from src.model.scraping_control.archiving import website_database
+from src.model.scraping_control.archiving.parameterized_website_database import WebsiteDatabase
 from src.model.scraping_control import media_metadata
 from uuid import uuid4
 
@@ -41,6 +41,7 @@ class WebsiteArchiver(ABC):
                 - spider configuration in case of scrapy
             'offline_copy_path': Optional. Results in the creation of an offline copy with the given path as root
                 folder.
+            'database_uri': Optional. Results in the use of the given database for archiving.
         :param reload_last_state: Flag for declaring whether to reload last state from cache dumps.
         :param reload_assets: Flag for declaring whether to redownloading assets.
         """
@@ -48,7 +49,7 @@ class WebsiteArchiver(ABC):
         self.logger.info(
             f"Initializing WebsiteArchiver {self} with profile: {profile}")
         # Handling data backend
-        self.database = website_database
+        self.database = WebsiteDatabase(profile.get("database_uri"))
         self.website_entry = self.database.get_or_create_website_entry(profile)
         self.website_id = str(self.website_entry.id)
         self.media_handler = media_metadata.MediaMetadata()
