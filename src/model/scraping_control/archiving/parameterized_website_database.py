@@ -24,10 +24,10 @@ class WebsiteDatabase(object):
         :param database_uri: Database URI.
             Defaults to None in which case the central WEBSITE_ARCHIVER_DB ENV variable is used.
         """
-        self._self._logger = cfg.LOGGER
+        self._logger = cfg.LOGGER
         self._logger.info("Automapping existing structures")
-        self.self.base = automap_base()
-        self.engine = sqlalchemy_utility.get_self.engine(
+        self.base = automap_base()
+        self.engine = sqlalchemy_utility.get_engine(
             cfg.ENV["WEBSITE_ARCHIVER_DB"] if database_uri is None else database_uri)
         self.base.prepare(autoload_with=self.engine, reflect=True)
         self._logger.info("base created with")
@@ -51,7 +51,7 @@ class WebsiteDatabase(object):
         if "website" not in self.base.classes:
             self._logger.info(
                 "Website class is not declared yet, rebuilding base.")
-            self.base = declarative_base.base()
+            self.base = declarative_base()
 
             class Website(self.base):
                 """
@@ -85,7 +85,7 @@ class WebsiteDatabase(object):
                 self.base.metadata.tables
             }
 
-        self.session_factory = sqlalchemy_utility.get_self.session_factory(
+        self.session_factory = sqlalchemy_utility.get_session_factory(
             self.engine)
         self._logger.info(f"self.model: {self.model}")
 
@@ -111,8 +111,8 @@ class WebsiteDatabase(object):
 
             run_id = Column(Integer, primary_key=True, autoincrement=True, unique=True, nullable=False,
                             comment="ID of the run.")
-            metadata = Column(JSON, nullable=True,
-                              comment="Metadata of run.")
+            profile = Column(JSON, nullable=True,
+                             comment="Profile of run.")
 
             started = Column(DateTime, default=func.now(),
                              comment="Starting timestamp.")
@@ -321,7 +321,7 @@ class WebsiteDatabase(object):
             inactive = Column(CHAR, default="",
                               comment="Flag for marking inactive entries.")
 
-        for dataclass in [Page, Asset, PageLink, ExternalPageLink, AssetLink, Block, Architecture, RawPage, RawAsset]:
+        for dataclass in [Run, Page, Asset, PageLink, ExternalPageLink, AssetLink, Block, Architecture, RawPage, RawAsset]:
             self.model[dataclass.__tablename__] = dataclass
         self._logger.info(f"self.model after addition: {self.model}")
         self._logger.info("Creating new structures")
