@@ -13,7 +13,7 @@ import requests
 from typing import Optional, Any, List, Union, Tuple
 from src.configuration import configuration as cfg
 from src.utility.bronze import sqlalchemy_utility, dictionary_utility
-from src.utility.silver import internet_utility
+from src.utility.silver import internet_utility, file_system_utility
 from requests.exceptions import SSLError
 from src.model.scraping_control.archiving.parameterized_website_database import WebsiteDatabase
 from src.model.scraping_control import media_metadata
@@ -73,7 +73,7 @@ class WebsiteArchiver(ABC):
 
         # Handle cache
         self.dump_folder = self.profile.get("dump_path", os.path.join(
-            cfg.PATHS.DUMP_PATH, "website_archiver", self.website_id))
+            cfg.PATHS.DUMP_PATH, "website_archiver", file_system_utility.clean_directory_name(self.base_url)))
         if not os.path.exists(self.dump_folder):
             os.makedirs(self.dump_folder)
         self._cache = {}
