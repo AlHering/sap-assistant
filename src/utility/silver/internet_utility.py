@@ -16,7 +16,7 @@ import socket
 import logging
 from time import sleep
 from typing import Any, Optional
-
+from fake_useragent import UserAgent
 import requests
 from http_request_randomizer.requests.proxy.requestProxy import RequestProxy
 LOGGER = logging.Logger("[InternetUtility]")
@@ -71,8 +71,8 @@ def timeout(max_timeout: float) -> Any:
 
 def get_proxy(**kwargs: Optional[Any]) -> str:
     """
-    Function for getting proxy.
-    :param kwargs: :param kwargs: Arbitrary keyword arguments.
+    Function for getting a proxy.
+    :param kwargs: Arbitrary keyword arguments.
         'source': Source to get proxy from: 'package' or the path to a file, containing proxies, are supported.
         'location': Location for proxy to get, only working with supported source.
     :return: Proxy IP as string.
@@ -91,6 +91,22 @@ def get_proxy(**kwargs: Optional[Any]) -> str:
     elif os.path.exists(source):
         proxies = open(source, "r").readlines()
         return proxies[random.randint(0, len(proxies)-1)]
+
+
+def get_user_agent(**kwargs: Optional[Any]) -> str:
+    """
+    Function for getting a user agent.
+    :param kwargs: Arbitrary keyword arguments.
+        'browsers': List of browsers to include.
+        'fa_code': Fake Agent code to use.
+    :return: User agent string.
+    """
+    ua = UserAgent(browsers=kwargs["browsers"]
+                   ) if "browsers" in kwargs else UserAgent()
+    if "fa_code" in kwargs:
+        return getattr(ua, kwargs["fa_code"])
+    else:
+        return ua.random
 
 
 def check_port_usable(port: int) -> bool:
