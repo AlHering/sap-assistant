@@ -26,7 +26,7 @@ def run_archiver(profile: dict, wait: float = .0) -> None:
 if __name__ == "__main__":
     processes = []
     counter = .0
-    for profile_name in ["tcodesearch_com", "sapdatasheet_org", "sap4tech_net", "erpgreat_com", "erp-up_de"]:
+    for profile_name in ["se80_co_uk", "tcodesearch_com", "sapdatasheet_org", "sap4tech_net", "erpgreat_com", "erp-up_de"]:
         profile = json_utility.load(
             f"{cfg.PATHS.DATA_PATH}/processes/profiles/{profile_name}.json")
         database_uri = f"sqlite:///{cfg.PATHS.DATA_PATH}/processes/{profile_name}.db"
