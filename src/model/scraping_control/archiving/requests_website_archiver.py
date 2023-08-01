@@ -34,11 +34,17 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
         """
         super().__init__(profile=profile, reload_last_state=reload_last_state)
         self._cache["session"] = requests.Session()
+        if isinstance(self.proxies, dict):
+            self._cache["session"].proxies.update(self.proxies)
+        elif isinstance(self.proxies, str) and self.proxies == "torsocks":
+            self._cache["session"].proxies = {
+                "http": "socks5://127.0.0.1:9050",
+                "https": "socks5://127.0.0.1:9050"
+            }
         self._cache["milestones"] = self.profile.get("milestones", 1000)
         self._cache["last_url"] = self._cache.get("last_url")
         self._cache["current_url"] = self._cache.get("current_url")
         self._cache["current_index"] = self._cache.get("current_index", 0)
-        self.next_proxy = self.profile.get("proxies", "random")
 
     def archive_website(self) -> None:
         """
@@ -87,6 +93,19 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
         dump_data = json_utility.load(path)
         self._cache.update(dump_data["_cache"])
 
+    def _retry_request_new_identity(self) -> requests.Response:
+        """
+        Internal method for retrying a requests with new identity.
+        :param next_url: Target URL.
+        :return: Response.
+        """
+        if isinstance(self.proxies, str):
+            if self.proxies == "random":
+                proxy = internet_utility.RequestProxy()
+                return proxy.generate_proxied_request(self._cache["current_url"], headers=proxy.generate_random_request_headers())
+
+        return self._cache["session"].get(self._cache["current_url"], headers={"User-agent": internet_utility.get_user_agent()})
+
     def _handle_next_page(self, next_url: str) -> None:
         """
         Internal method to handle next page.
@@ -97,6 +116,8 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
             self.logger.info(
                 f"Fetching {self._cache['current_url']} ({self._cache['current_index']})")
             response = self._cache["session"].get(self._cache["current_url"])
+            if response.status == 403:
+                response = self._retry_with_new_identity()
         except SSLError:
             self.logger.warning(f"SSL error appeared! Passing verification.")
             response = self._cache["session"].get(
