@@ -15,7 +15,7 @@ from src.configuration import configuration as cfg
 from src.utility.bronze import sqlalchemy_utility, dictionary_utility
 from src.utility.silver import internet_utility, file_system_utility
 from requests.exceptions import SSLError
-from src.model.scraping_control.archiving.parameterized_website_database import WebsiteDatabase
+from src.model.scraping_control.archiving.website_database_class import WebsiteDatabase
 from src.model.scraping_control import media_metadata
 from uuid import uuid4
 
@@ -42,6 +42,7 @@ class WebsiteArchiver(ABC):
             'offline_copy_path': Optional. Results in the creation of an offline copy with the given path as root
                 folder.
             'database_uri': Optional. Results in the use of the given database for archiving.
+            'proxies': Proxy dictionary or process flag form ['random', 'torsocks']
         :param reload_last_state: Flag for declaring whether to reload last state from cache dumps.
         :param reload_assets: Flag for declaring whether to redownloading assets.
         """
@@ -70,6 +71,7 @@ class WebsiteArchiver(ABC):
             self.website_id, )
         self.redownload_assets = profile.get(
             "redownload_assets", redownload_assets)
+        self.proxies = profile.get("proxies")
 
         # Handle cache
         self.dump_folder = self.profile.get("dump_path", os.path.join(
