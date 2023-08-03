@@ -25,4 +25,5 @@ scrapy-proxies==0.4
 scrapy-proxy-pool==0.1.9
 lxml==4.9.2
 pandas==2.0.3
+free-proxy==1.1.1
 fake-useragent==1.1.3
