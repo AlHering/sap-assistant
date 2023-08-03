@@ -11,7 +11,9 @@ from src.utility.bronze import json_utility
 from src.model.scraping_control.archiving.requests_website_archiver import RequestsWebsiteArchiver
 
 if __name__ == "__main__":
-    PROFILE_PATH = f"{cfg.PATHS.DATA_PATH}/processes/profiles/se80_co_uk.json"
-    archiver = RequestsWebsiteArchiver(
-        json_utility.load(PROFILE_PATH))
+    profile = json_utility.load(
+        f"{cfg.PATHS.DATA_PATH}/processes/profiles/se80_co_uk.json")
+    database_uri = f"sqlite:///{cfg.PATHS.DATA_PATH}/processes/se80_co_uk.db"
+    profile["database_uri"] = database_uri
+    archiver = RequestsWebsiteArchiver(profile)
     archiver.archive_website()
