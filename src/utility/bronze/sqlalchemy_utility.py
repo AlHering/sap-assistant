@@ -6,6 +6,7 @@
 ****************************************************
 """
 import copy
+from enum import Enum
 from sqlalchemy import Column, String, Boolean, Integer, JSON, Text, DateTime, CHAR, ForeignKey, Table, Float, BLOB, TEXT
 from sqlalchemy.orm import Session, relationship
 from sqlalchemy import and_, or_, not_
@@ -44,7 +45,22 @@ SQLALCHEMY_FILTER_CONVERTER = {
 
 # Supported dialects
 SUPPORTED_DIALECTS = ["sqlite", "mysql",
-                      "mssql", "postgresql", "mariadb", "oracle"]
+                      "mssql", "postgresql", "mariadb", "oracle", "duckdb"]
+
+
+class Dialect(Enum):
+    """
+    Database dialect enum class.
+    """
+    SQLITE = 0
+    MYSQL = 1
+    MARIADB = 2
+    DUCKDB = 3
+    ORACLE = 4
+    MSSQL = 5
+    POSTGRESQL = 6
+
+
 # Conversion dictionary for SQLAlchemy typing
 SQLALCHEMY_TYPING_DICTIONARY = {
     "int": Integer,
