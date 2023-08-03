@@ -76,6 +76,7 @@ class WebsiteArchiver(ABC):
         self.redownload_assets = profile.get(
             "redownload_assets", redownload_assets)
         self.proxies = profile.get("proxies")
+        self.failed = set()
 
         # Handle cache
         self.dump_folder = self.profile.get("dump_path", os.path.join(
