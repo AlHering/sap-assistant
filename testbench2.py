@@ -35,5 +35,9 @@ if __name__ == "__main__":
                          args=(profile, counter*10)))
         processes[-1].start()
         counter += 1
-    for process in processes:
-        process.join()
+    try:
+        for process in processes:
+            process.join()
+    except KeyboardInterrupt:
+        for process in processes:
+            process.kill()
