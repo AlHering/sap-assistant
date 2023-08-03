@@ -50,7 +50,7 @@ class WebsiteArchiver(ABC):
         """
         self.logger = cfg.LOGGER
         self.logger.info(
-            f"Initializing WebsiteArchiver {self} with profile: {profile}")
+            f"[{profile['base_url']}] Initializing WebsiteArchiver {self} with profile: {profile}")
         # Handling data backend
         self.database = WebsiteDatabase(profile.get("database_uri"))
         self.website_entry = self.database.get_or_create_website_entry(profile)
@@ -72,7 +72,7 @@ class WebsiteArchiver(ABC):
         self.page_counter, self.asset_counter = self.database.get_element_count(
             self.website_id, )
         self.logger.info(
-            f"Found {self.page_counter} pages and {self.asset_counter} assets, already registered under archiver.")
+            f"[{profile['base_url']}] Found {self.page_counter} pages and {self.asset_counter} assets, already registered under archiver.")
         self.redownload_assets = profile.get(
             "redownload_assets", redownload_assets)
         self.proxies = profile.get("proxies")
@@ -89,6 +89,8 @@ class WebsiteArchiver(ABC):
                     file for file in files if file.startswith("MILESTONE")]
                 if dumped_caches:
                     self.load_state_dump(os.path.join(root, dumped_caches[-1]))
+                    self.logger.info(
+                        f"[{profile['base_url']}] Reentering on '{dumped_caches[-1]}' ...")
                 break
 
     @abstractmethod
@@ -126,7 +128,8 @@ class WebsiteArchiver(ABC):
         :param offline_path: Offline path. Defaults to None in which case offline path is created dynamically if
             'offline_copy_path' is given in profile.
         """
-        self.logger.info(f"Registering page '{page_url}'")
+        self.logger.info(
+            f"[{self.profile['base_url']}] Registering page '{page_url}'")
         if page_content is not None and self.offline_copy_path is not None:
             if offline_path is None:
                 offline_path = self.convert_url_to_path(page_url)
@@ -171,7 +174,7 @@ class WebsiteArchiver(ABC):
             'offline_copy_path' is given in profile.
         """
         self.logger.info(
-            f"Registering asset '{asset_url}' under '{source_url}'")
+            f"[{self.profile['base_url']}] Registering asset '{asset_url}' under '{source_url}'")
         if asset_content is not None and self.offline_copy_path is not None:
             if offline_path is None:
                 offline_path = self.convert_url_to_path(
@@ -189,7 +192,7 @@ class WebsiteArchiver(ABC):
         :return: Flag, declaring whether link was already registered
         """
         self.logger.info(
-            f"Registering link '{target_url}' ({target_type}) under '{source_url}'")
+            f"[{self.profile['base_url']}] Registering link '{target_url}' ({target_type}) under '{source_url}'")
         return self.database.register_link(
             self.website_id, source_url, target_url, target_type)
 
