@@ -45,6 +45,10 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
         self._cache["last_url"] = self._cache.get("last_url")
         self._cache["current_url"] = self._cache.get("current_url")
         self._cache["current_index"] = self._cache.get("current_index", 0)
+        self._cache["reconnect_interval"] = self.profile.get(
+            "reconnect_interval", 60)
+        self._cache["reconnect_retries"] = self.profile.get(
+            "reconnect_retries", 3600)
 
     def archive_website(self) -> None:
         """
@@ -144,10 +148,12 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
             })
             # TODO: Implement appropriate methods on super-class level
             self.logger.warning(f"Connection error appeared!")
-            while not internet_utility.check_connection():
+            tries = 0
+            while not internet_utility.check_connection() and self._cache["reconnect_retries"] < tries:
                 self.logger.warning(
                     f"No internet connection! Retrying in 10 seconds ...")
-                time.sleep(10)
+                time.sleep(self._cache["reconnect_interval"])
+                tries += 1
             self.logger.info(f"Regained internet connection, retrying ...")
             return self._handle_next_page(self._cache["current_url"])
         self.logger.info(f"Status: {response.status_code}")

@@ -43,6 +43,8 @@ class WebsiteArchiver(ABC):
                 folder.
             'database_uri': Optional. Results in the use of the given database for archiving.
             'proxies': Proxy dictionary or process flag form ['random', 'torsocks']
+            'reconnect_interval': Optional. Time to wait before rechecking on a connection in seconds.
+            'reconnect_retries': Optional. Maximum number of reconnection tries.
         :param reload_last_state: Flag for declaring whether to reload last state from cache dumps.
         :param reload_assets: Flag for declaring whether to redownloading assets.
         """
