@@ -53,7 +53,7 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
         try:
             next_url = self.get_next_url(self._cache["current_url"])
             while next_url is not None:
-                if self._cache["current_index"] % self._cache["milestones"] == 0:
+                if self._cache["current_index"] % self._cache["milestones"] == 0 and self._cache["current_index"] != 0:
                     self.create_state_dump(
                         "crawling_milestone", f"MILESTONE_{self._cache['current_index']}.json")
                 self._handle_next_page(next_url)
