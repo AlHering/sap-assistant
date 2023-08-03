@@ -18,13 +18,13 @@ class WebsiteDatabase(object):
     Class, representing website database.
     """
 
-    def __init__(self, database_uri: str = None, verbose: bool = True) -> None:
+    def __init__(self, database_uri: str = None, verbose: bool = False) -> None:
         """
         Initiation method.
         :param database_uri: Database URI.
             Defaults to None in which case the central WEBSITE_ARCHIVER_DB ENV variable is used.
         :param verbose: Verbose flag for interaction methods.
-            Defaults to True since archiver is already logging.
+            Defaults to False since archiver is already logging.
         """
         self._logger = cfg.LOGGER
         self.verbose = verbose
@@ -326,7 +326,8 @@ class WebsiteDatabase(object):
 
         for dataclass in [Run, Page, Asset, PageLink, ExternalPageLink, AssetLink, Block, Architecture, RawPage, RawAsset]:
             self.model[dataclass.__tablename__] = dataclass
-        self._logger.info(f"self.model after addition: {self.model}")
+        if self.verbose:
+            self._logger.info(f"self.model after addition: {self.model}")
         self._logger.info("Creating new structures")
         self.base.metadata.create_all(bind=self.engine)
 
