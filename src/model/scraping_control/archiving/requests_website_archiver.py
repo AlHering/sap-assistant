@@ -110,8 +110,9 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
         if response is None or response.status_code != 200:
             if isinstance(self.proxies, str):
                 if self.proxies == "random":
-                    proxy = internet_utility.RequestProxy()
-                    return proxy.generate_proxied_request(self._cache["current_url"], headers=proxy.generate_random_request_headers())
+                    self._cache["session"].proxies = internet_utility.get_proxy(
+                        source="package")
+                    return self._cache["session"].get(self._cache["current_url"], headers=headers)
 
         return response if (response is not None and response.status_code != 200) else self._cache["session"].get(self._cache["current_url"], headers={"User-agent": internet_utility.get_user_agent()})
 
