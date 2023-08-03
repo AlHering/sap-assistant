@@ -116,7 +116,7 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
             self.logger.info(
                 f"Fetching {self._cache['current_url']} ({self._cache['current_index']})")
             response = self._cache["session"].get(self._cache["current_url"])
-            if response.status == 403:
+            if response.status_code != 200:
                 response = self._retry_with_new_identity()
         except SSLError:
             self.logger.warning(f"SSL error appeared! Passing verification.")
