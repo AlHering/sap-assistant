@@ -547,6 +547,8 @@ class WebsiteDatabase(object):
             self.model[f"{website_id}.pages"])).scalar())
         asset_count = int(self.engine.connect().execute(select(func.count()).select_from(
             self.model[f"{website_id}.assets"])).scalar())
+        self._logger.info(
+            f"Counted {page_count} pages and {asset_count} assets under {website_id}'s tracked elements.")
         return page_count, asset_count
 
     def get_next_url(self, website_id: str, page_url: str) -> Optional[str]:
