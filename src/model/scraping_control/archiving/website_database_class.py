@@ -61,7 +61,8 @@ class WebsiteDatabase(object):
                 Website class.
                 """
                 __tablename__ = "website"
-                __table_args__ = {"comment": "Website Table."}
+                __table_args__ = {
+                    "comment": "Website Table.", "extend_existing": True}
 
                 id = Column(Integer, primary_key=True, autoincrement=True, unique=True, nullable=False,
                             comment="ID of the website.")
@@ -111,7 +112,8 @@ class WebsiteDatabase(object):
             Page dataclass, representing a scraping run of a website.
             """
             __tablename__ = f"{website_id}.runs"
-            __table_args__ = {"comment": "Website Run Table."}
+            __table_args__ = {
+                "comment": "Website Run Table.", "extend_existing": True}
 
             run_id = Column(Integer, primary_key=True, autoincrement=True, unique=True, nullable=False,
                             comment="ID of the run.")
@@ -130,7 +132,8 @@ class WebsiteDatabase(object):
             Page dataclass, representing a page of a website.
             """
             __tablename__ = f"{website_id}.pages"
-            __table_args__ = {"comment": "Website Page Table."}
+            __table_args__ = {
+                "comment": "Website Page Table.", "extend_existing": True}
 
             page_id = Column(Integer, primary_key=True, autoincrement=True, unique=True, nullable=False,
                              comment="ID of the page.")
@@ -149,7 +152,8 @@ class WebsiteDatabase(object):
             Page dataclass, representing an asset of a website.
             """
             __tablename__ = f"{website_id}.assets"
-            __table_args__ = {"comment": "Website Asset Table."}
+            __table_args__ = {
+                "comment": "Website Asset Table.", "extend_existing": True}
 
             asset_id = Column(Integer, primary_key=True, autoincrement=True, unique=True, nullable=False,
                               comment="ID of the asset.")
@@ -170,7 +174,8 @@ class WebsiteDatabase(object):
             Page dataclass, representing the page network of a website.
             """
             __tablename__ = f"{website_id}.page_network"
-            __table_args__ = {"comment": "Website Page Network Table."}
+            __table_args__ = {
+                "comment": "Website Page Network Table.", "extend_existing": True}
 
             link_id = Column(Integer, primary_key=True, autoincrement=True, unique=True, nullable=False,
                              comment="ID of a network link.")
@@ -194,7 +199,7 @@ class WebsiteDatabase(object):
             """
             __tablename__ = f"{website_id}.external_page_network"
             __table_args__ = {
-                "comment": "Website External Page Network Table."}
+                "comment": "Website External Page Network Table.", "extend_existing": True}
 
             link_id = Column(Integer, primary_key=True, autoincrement=True, unique=True, nullable=False,
                              comment="ID of a network link.")
@@ -215,7 +220,8 @@ class WebsiteDatabase(object):
             Page dataclass, representing the asset network of a website.
             """
             __tablename__ = f"{website_id}.asset_network"
-            __table_args__ = {"comment": "Website Asset Network Table."}
+            __table_args__ = {
+                "comment": "Website Asset Network Table.", "extend_existing": True}
 
             link_id = Column(Integer, primary_key=True, autoincrement=True, unique=True, nullable=False,
                              comment="ID of a network link.")
@@ -236,7 +242,8 @@ class WebsiteDatabase(object):
             Page dataclass, representing a block of a website.
             """
             __tablename__ = f"{website_id}.blocks"
-            __table_args__ = {"comment": "Website Block Table."}
+            __table_args__ = {
+                "comment": "Website Block Table.", "extend_existing": True}
 
             block_id = Column(Integer, primary_key=True, autoincrement=True, unique=True, nullable=False,
                               comment="ID of a network link.")
@@ -257,7 +264,8 @@ class WebsiteDatabase(object):
             Page dataclass, representing an architecture instance of a website.
             """
             __tablename__ = f"{website_id}.architecture"
-            __table_args__ = {"comment": "Website Architecture Table."}
+            __table_args__ = {
+                "comment": "Website Architecture Table.", "extend_existing": True}
 
             instance_id = Column(Integer, primary_key=True, autoincrement=True, unique=True, nullable=False,
                                  comment="ID of an architecture instance.")
@@ -280,7 +288,8 @@ class WebsiteDatabase(object):
             Page dataclass, representing a raw page of a website.
             """
             __tablename__ = f"{website_id}.raw_pages"
-            __table_args__ = {"comment": "Website Raw Page Table."}
+            __table_args__ = {
+                "comment": "Website Raw Page Table.", "extend_existing": True}
 
             instance_id = Column(Integer, primary_key=True, autoincrement=True, unique=True, nullable=False,
                                  comment="ID of a raw page instance.")
@@ -303,7 +312,8 @@ class WebsiteDatabase(object):
             Page dataclass, representing a raw asset of a website.
             """
             __tablename__ = f"{website_id}.raw_assets"
-            __table_args__ = {"comment": "Website Raw Asset Table."}
+            __table_args__ = {
+                "comment": "Website Raw Asset Table.", "extend_existing": True}
 
             instance_id = Column(Integer, primary_key=True, autoincrement=True, unique=True, nullable=False,
                                  comment="ID of a raw asset instance.")
