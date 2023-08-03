@@ -149,6 +149,10 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
             self._cache["current_url"] = self.fix_link(
                 self._cache["last_url"], self._cache["current_url"])
             response = self._cache["session"].get(self._cache["current_url"])
+        except requests.exceptions.TooManyRedirects:
+            self.failed.add(self._cache["current_url"])
+            self.logger.info(
+                f"[{self.profile['base_url']}] '{self._cache['current_url']}' exceeded limit of redirects, ignoring ...")
         except requests .exceptions.ConnectionError as ex:
             self.create_state_dump({
                 "exception": str(ex),
