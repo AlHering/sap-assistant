@@ -104,13 +104,13 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
         :return: Response.
         """
         self.logger.info(
-            f"Status invalid, retrying with different user-agent and proxy setting '{self.proxies}' ...")
+            f"[{self.profile['base_url']}] Status invalid, retrying with different user-agent and proxy setting '{self.proxies}' ...")
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36"}
         response = self._cache["session"].get(
             self._cache["current_url"], headers=headers)
         self.logger.info(
-            f"User-agent change resulted in status '{response.status_code}' ...")
+            f"[{self.profile['base_url']}] User-agent change resulted in status '{response.status_code}' ...")
         if response is None or response.status_code != 200:
             if isinstance(self.proxies, str):
                 if self.proxies == "random":
@@ -128,16 +128,18 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
         self._cache["current_url"] = next_url
         try:
             self.logger.info(
-                f"Fetching {self._cache['current_url']} ({self._cache['current_index']})")
+                f"[{self.profile['base_url']}] Fetching {self._cache['current_url']} ({self._cache['current_index']})")
             response = self._cache["session"].get(self._cache["current_url"])
             if response.status_code != 200:
                 response = self._retry_with_new_identity()
         except SSLError:
-            self.logger.warning(f"SSL error appeared! Passing verification.")
+            self.logger.warning(
+                f"[{self.profile['base_url']}] SSL error appeared! Passing verification.")
             response = self._cache["session"].get(
                 self._cache["current_url"], verify=False)
         except requests.exceptions.MissingSchema:
-            self.logger.warning(f"Missing schema! Trying to fix URL.")
+            self.logger.warning(
+                f"[{self.profile['base_url']}] Missing schema! Trying to fix URL.")
             self._cache["current_url"] = self.fix_link(
                 self._cache["last_url"], self._cache["current_url"])
             response = self._cache["session"].get(self._cache["current_url"])
@@ -147,16 +149,19 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
                 "traceback": traceback.format_exc()
             })
             # TODO: Implement appropriate methods on super-class level
-            self.logger.warning(f"Connection error appeared!")
+            self.logger.warning(
+                f"[{self.profile['base_url']}] Connection error appeared!")
             tries = 0
             while not internet_utility.check_connection() and self._cache["reconnect_retries"] < tries:
                 self.logger.warning(
-                    f"No internet connection! Retrying in 10 seconds ...")
+                    f"[{self.profile['base_url']}] No internet connection! Retrying in 10 seconds ...")
                 time.sleep(self._cache["reconnect_interval"])
                 tries += 1
-            self.logger.info(f"Regained internet connection, retrying ...")
+            self.logger.info(
+                f"[{self.profile['base_url']}] Regained internet connection, retrying ...")
             return self._handle_next_page(self._cache["current_url"])
-        self.logger.info(f"Status: {response.status_code}")
+        self.logger.info(
+            f"[{self.profile['base_url']}] Status: {response.status_code}")
         self.register_page(self._cache["current_url"], response.content)
 
         html_content = html.fromstring(
@@ -180,10 +185,11 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
                 self.register_asset(
                     self._cache["current_url"], link, *asset_data)
             except requests.exceptions.MissingSchema:
-                self.logger.info(f"Schema exception appeared for '{link}'")
+                self.logger.info(
+                    f"[{self.profile['base_url']}] Schema exception appeared for '{link}'")
             except requests.exceptions.ConnectionError:
                 self.logger.info(
-                    f"ConnectionError exception appeared for '{link}'")
+                    f"[{self.profile['base_url']}] ConnectionError exception appeared for '{link}'")
 
         discarded = 0
         discarded_external = 0
@@ -197,5 +203,5 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
             else:
                 discarded_external += 1
         self.logger.info(
-            f"Discarded {discarded} internal and {discarded_external} external page links.")
+            f"[{self.profile['base_url']}] Discarded {discarded} internal and {discarded_external} external page links.")
         self._cache["current_index"] += 1
