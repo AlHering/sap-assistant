@@ -18,13 +18,16 @@ class WebsiteDatabase(object):
     Class, representing website database.
     """
 
-    def __init__(self, database_uri: str = None) -> None:
+    def __init__(self, database_uri: str = None, verbose: bool = True) -> None:
         """
         Initiation method.
         :param database_uri: Database URI.
             Defaults to None in which case the central WEBSITE_ARCHIVER_DB ENV variable is used.
+        :param verbose: Verbose flag for interaction methods.
+            Defaults to True since archiver is already logging.
         """
         self._logger = cfg.LOGGER
+        self.verbose = verbose
         self._logger.info("Automapping existing structures")
         self.base = automap_base()
         self.engine = sqlalchemy_utility.get_engine(
@@ -333,7 +336,8 @@ class WebsiteDatabase(object):
         :param profile: Website archiver profile.
         :return: Website archiver entry.
         """
-        self._logger.info(f"Adding website with {profile}")
+        if self.verbose:
+            self._logger.info(f"Adding website with {profile}")
         with self.session_factory() as session:
             website = self.model["website"](
                 base_url=profile["base_url"],
@@ -355,7 +359,8 @@ class WebsiteDatabase(object):
         :param profile: Archiver profile.
         :return: Website entry.
         """
-        self._logger.info(f"Searching for website entry with {profile}")
+        if self.verbose:
+            self._logger.info(f"Searching for website entry with {profile}")
         session = self.session_factory()
         website_entries = session.query(self.model["website"]).filter(
             self.model["website"].base_url == profile["base_url"])
@@ -375,15 +380,17 @@ class WebsiteDatabase(object):
         :param page_content: Page content. Defaults to None.
         :param page_path: Page path. Defaults to None
         """
-        self._logger.info(
-            f"Registering page for website {website_id}: {page_url}")
+        if self.verbose:
+            self._logger.info(
+                f"Registering page for website {website_id}: {page_url}")
         with self.session_factory() as session:
             page = session.query(self.model[f"{website_id}.pages"]).filter(
                 self.model[f"{website_id}.pages"].page_url == page_url
             ).first()
             if page is None:
-                self._logger.info(
-                    f"Found already registered page for website {website_id}: {page_url}")
+                if self.verbose:
+                    self._logger.info(
+                        f"Found already registered page for website {website_id}: {page_url}")
                 page = self.model[f"{website_id}.pages"](
                     page_url=page_url, created=datetime.datetime.now(), inactive="")
                 session.add(page)
@@ -425,8 +432,9 @@ class WebsiteDatabase(object):
         :param asset_extension: Asset extension.
         :param asset_path: Asset path. Defaults to None
         """
-        self._logger.info(
-            f"Registering asset for website {website_id}: {asset_url}")
+        if self.verbose:
+            self._logger.info(
+                f"Registering asset for website {website_id}: {asset_url}")
         with self.session_factory() as session:
             asset = session.query(self.model[f"{website_id}.assets"]).filter(
                 self.model[f"{website_id}.assets"].asset_url == asset_url
@@ -436,12 +444,14 @@ class WebsiteDatabase(object):
                     asset_url=asset_url, asset_type=asset_type, created=datetime.datetime.now())
                 session.add(asset)
             elif asset.inactive != "":
-                self._logger.info(
-                    f"Found already registered inactivate asset for website {website_id}: {asset_url}")
+                if self.verbose:
+                    self._logger.info(
+                        f"Found already registered inactivate asset for website {website_id}: {asset_url}")
                 asset.inactive = ""
             else:
-                self._logger.info(
-                    f"Found already registered asset for website {website_id}: {asset_url}")
+                if self.verbose:
+                    self._logger.info(
+                        f"Found already registered asset for website {website_id}: {asset_url}")
 
             asset.updated = datetime.datetime.now()
             session.commit()
@@ -504,8 +514,9 @@ class WebsiteDatabase(object):
         :param target_type: Target type: Either 'page' or 'asset'.
         :return: Flag, declaring whether link was already registered.
         """
-        self._logger.info(
-            f"Registering link for website {website_id}: {source_url} -> {target_url} ({target_type})")
+        if self.verbose:
+            self._logger.info(
+                f"Registering link for website {website_id}: {source_url} -> {target_url} ({target_type})")
         target_column = getattr(
             self.model[f"{website_id}.{target_type}_network"], f"target_{target_type}_url")
         link = None
@@ -528,8 +539,9 @@ class WebsiteDatabase(object):
                     **creation_kwargs
                 ))
             else:
-                self._logger.info(
-                    f"Found already registered link for {source_url} -> {target_url}")
+                if self.verbose:
+                    self._logger.info(
+                        f"Found already registered link for {source_url} -> {target_url}")
                 link.inactive = ""
                 link.updated = datetime.datetime.now()
             session.commit()
@@ -541,14 +553,16 @@ class WebsiteDatabase(object):
         :param website_id: Website ID.
         :return: Tuple of the numbers of tracked pages and assets.
         """
-        self._logger.info(
-            f"Counting {website_id}'s tracked elements...")
+        if self.verbose:
+            self._logger.info(
+                f"Counting {website_id}'s tracked elements...")
         page_count = int(self.engine.connect().execute(select(func.count()).select_from(
             self.model[f"{website_id}.pages"])).scalar())
         asset_count = int(self.engine.connect().execute(select(func.count()).select_from(
             self.model[f"{website_id}.assets"])).scalar())
-        self._logger.info(
-            f"Counted {page_count} pages and {asset_count} assets under {website_id}'s tracked elements.")
+        if self.verbose:
+            self._logger.info(
+                f"Counted {page_count} pages and {asset_count} assets under {website_id}'s tracked elements.")
         return page_count, asset_count
 
     def get_next_url(self, website_id: str, page_url: str) -> Optional[str]:
@@ -558,7 +572,8 @@ class WebsiteDatabase(object):
         :param page_url: Current URL.
         :return: Next target URL if found, else None.
         """
-        self._logger.info(f"Finished {website_id}: {page_url}")
+        if self.verbose:
+            self._logger.info(f"Finished {website_id}: {page_url}")
         next_link = None
         with self.session_factory() as session:
             followed = session.query(self.model[f"{website_id}.page_network"]).filter(
@@ -570,7 +585,8 @@ class WebsiteDatabase(object):
                 entry.followed = True
                 entry.updated = datetime.datetime.now()
             session.commit()
-            self._logger.info(f"Updated {website_id}: {page_url} links")
+            if self.verbose:
+                self._logger.info(f"Updated {website_id}: {page_url} links")
 
             while next_link is None:
                 next_link = session.query(self.model[f"{website_id}.page_network"]).filter(
@@ -606,8 +622,9 @@ class WebsiteDatabase(object):
         :param target_type: Target type: Either 'page' or 'asset'.
         :return: Flag, declaring whether target was already registered.
         """
-        self._logger.info(
-            f"Checking for existence {website_id}: {url} ({target_type})")
+        if self.verbose:
+            self._logger.info(
+                f"Checking for existence {website_id}: {url} ({target_type})")
         found = False
         url_column = getattr(
             self.model[f"{website_id}.{target_type}s"], f"{target_type}_url")
