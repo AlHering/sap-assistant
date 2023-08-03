@@ -143,7 +143,7 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
                 "traceback": traceback.format_exc()
             })
             # TODO: Implement appropriate methods on super-class level
-            self.logger.warning(f"Connection error appeared! Dump created!")
+            self.logger.warning(f"Connection error appeared!")
             while not internet_utility.check_connection():
                 self.logger.warning(
                     f"No internet connection! Retrying in 10 seconds ...")
