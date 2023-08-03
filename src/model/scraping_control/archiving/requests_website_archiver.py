@@ -99,6 +99,8 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
         :param next_url: Target URL.
         :return: Response.
         """
+        self.logger.info(
+            f"Status invalid, retrying with proxy setting '{self.proxies}' ...")
         if isinstance(self.proxies, str):
             if self.proxies == "random":
                 proxy = internet_utility.RequestProxy()
@@ -138,13 +140,8 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
                 self.logger.warning(
                     f"No internet connection! Retrying in 10 seconds ...")
                 time.sleep(10)
-            self.logger.info(f"Using proxy: '{self.next_proxy}'")
-            self._cache["session"] = requests_utility.get_session(
-                proxy_flag=self.next_proxy)
-            if self.next_proxy in ["torsocks", "random"]:
-                self.next_proxy = {"torsocks": "random",
-                                   "random": "torsocks"}[self.next_proxy]
-            return
+            self.logger.info(f"Regained internet connection, retrying ...")
+            return self._handle_next_page(self._cache["current_url"])
         self.logger.info(f"Status: {response.status_code}")
         self.register_page(self._cache["current_url"], response.content)
 
