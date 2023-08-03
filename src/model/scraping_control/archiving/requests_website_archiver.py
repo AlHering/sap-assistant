@@ -15,6 +15,7 @@ from lxml import html
 import traceback
 from lxml.etree import ParseError
 from requests.exceptions import SSLError
+from urllib3.exceptions import MaxRetryError
 from src.model.scraping_control.archiving.website_archiver import WebsiteArchiver
 from src.configuration import configuration as cfg
 from src.utility.bronze import json_utility, time_utility, dictionary_utility, requests_utility
@@ -132,6 +133,8 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
             response = self._cache["session"].get(self._cache["current_url"])
             if response.status_code != 200:
                 response = self._retry_with_new_identity()
+        except MaxRetryError:
+            response = self._retry_with_new_identity()
         except SSLError:
             self.logger.warning(
                 f"[{self.profile['base_url']}] SSL error appeared! Passing verification.")
@@ -150,7 +153,7 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
             })
             # TODO: Implement appropriate methods on super-class level
             self.logger.warning(
-                f"[{self.profile['base_url']}] Connection error appeared!")
+                f"[{self.profile['base_url']}] Connection error appeared! State dump created.")
             tries = 0
             while not internet_utility.check_connection() and self._cache["reconnect_retries"] < tries:
                 self.logger.warning(
