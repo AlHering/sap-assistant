@@ -18,7 +18,6 @@ from time import sleep
 from typing import Any, Optional
 from fake_useragent import UserAgent
 import requests
-from http_request_randomizer.requests.proxy.requestProxy import RequestProxy
 LOGGER = logging.Logger("[InternetUtility]")
 
 
@@ -69,7 +68,7 @@ def timeout(max_timeout: float) -> Any:
     return timeout_decorator
 
 
-def get_proxy(**kwargs: Optional[Any]) -> str:
+def get_proxy(**kwargs: Optional[Any]) -> Optional[str]:
     """
     Function for getting a proxy.
     :param kwargs: Arbitrary keyword arguments.
@@ -81,13 +80,7 @@ def get_proxy(**kwargs: Optional[Any]) -> str:
     location = kwargs.get("location", "")
 
     if source == "package":
-        proxies = RequestProxy().get_proxy_list()
-        if location:
-            for proxy in proxies:
-                if proxy.country.lower() == location.lower():
-                    return proxy.get_address()
-        else:
-            return proxies[random.randint(0, len(proxies)-1)].get_address()
+        return None
     elif os.path.exists(source):
         proxies = open(source, "r").readlines()
         return proxies[random.randint(0, len(proxies)-1)]
