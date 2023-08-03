@@ -100,13 +100,20 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
         :return: Response.
         """
         self.logger.info(
-            f"Status invalid, retrying with proxy setting '{self.proxies}' ...")
-        if isinstance(self.proxies, str):
-            if self.proxies == "random":
-                proxy = internet_utility.RequestProxy()
-                return proxy.generate_proxied_request(self._cache["current_url"], headers=proxy.generate_random_request_headers())
+            f"Status invalid, retrying with different user-agent and proxy setting '{self.proxies}' ...")
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36"}
+        response = self._cache["session"].get(
+            self._cache["current_url"], headers=headers)
+        self.logger.info(
+            f"User-agent change resulted in status '{response.status_code}' ...")
+        if response is None or response.status_code != 200:
+            if isinstance(self.proxies, str):
+                if self.proxies == "random":
+                    proxy = internet_utility.RequestProxy()
+                    return proxy.generate_proxied_request(self._cache["current_url"], headers=proxy.generate_random_request_headers())
 
-        return self._cache["session"].get(self._cache["current_url"], headers={"User-agent": internet_utility.get_user_agent()})
+        return response if (response is not None and response.status_code != 200) else self._cache["session"].get(self._cache["current_url"], headers={"User-agent": internet_utility.get_user_agent()})
 
     def _handle_next_page(self, next_url: str) -> None:
         """
