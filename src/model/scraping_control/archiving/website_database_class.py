@@ -90,7 +90,8 @@ class WebsiteDatabase(object):
 
         self.session_factory = sqlalchemy_utility.get_session_factory(
             self.engine)
-        self._logger.info(f"self.model: {self.model}")
+        if self.verbose:
+            self._logger.info(f"self.model: {self.model}")
 
     """
     Interfacing methods
