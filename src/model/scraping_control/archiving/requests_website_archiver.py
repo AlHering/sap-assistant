@@ -93,7 +93,7 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
         dump_data = json_utility.load(path)
         self._cache.update(dump_data["_cache"])
 
-    def _retry_request_new_identity(self) -> requests.Response:
+    def _retry_with_new_identity(self) -> requests.Response:
         """
         Internal method for retrying a requests with new identity.
         :param next_url: Target URL.
