@@ -42,7 +42,7 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
                 "http": "socks5://127.0.0.1:9050",
                 "https": "socks5://127.0.0.1:9050"
             }
-        self._cache["milestones"] = self.profile.get("milestones", 1000)
+        self._cache["milestones"] = self.profile.get("milestones", 300)
         self._cache["last_url"] = self._cache.get("last_url")
         self._cache["current_url"] = self._cache.get("current_url")
         self._cache["current_index"] = self._cache.get("current_index", 0)
