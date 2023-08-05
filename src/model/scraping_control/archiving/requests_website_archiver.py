@@ -16,7 +16,7 @@ import traceback
 from lxml.etree import ParseError
 from requests.exceptions import SSLError
 from urllib3.exceptions import MaxRetryError
-from src.model.scraping_control.archiving.website_database_archiver import WebsiteArchiver
+from src.model.scraping_control.archiving.website_archiver import WebsiteArchiver
 from src.configuration import configuration as cfg
 from src.utility.bronze import json_utility, time_utility, dictionary_utility, requests_utility
 from src.utility.silver import internet_utility
