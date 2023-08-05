@@ -85,14 +85,24 @@ class WebsiteArchiver(ABC):
             os.makedirs(self.dump_folder)
         self._cache = {}
         if reload_last_state:
-            for root, _, files in os.walk(self.dump_folder, topdown=True):
-                dumped_caches = [
-                    file for file in files if file.startswith("MILESTONE")]
-                if dumped_caches:
-                    self.load_state_dump(os.path.join(root, dumped_caches[-1]))
-                    self.logger.info(
-                        f"[{profile['base_url']}] Reentering on '{dumped_caches[-1]}' ...")
-                break
+            dumped_caches = []
+            latest_path = os.path.join(self.dump_folder, "latest.json")
+            if os.path.exists(latest_path):
+                dumped_caches.append(latest_path)
+            else:
+                for root, _, files in os.walk(self.dump_folder, topdown=True):
+                    dumped_caches = [
+                        file for file in files if file.startswith("MILESTONE")]
+                    if dumped_caches:
+                        self.load_state_dump(
+                            os.path.join(root, dumped_caches[-1]))
+                        self.logger.info(
+                            f"[{profile['base_url']}] Reentering on '{dumped_caches[-1]}' ...")
+                    break
+            if dumped_caches:
+                self.load_state_dump(os.path.join(root, dumped_caches[-1]))
+                self.logger.info(
+                    f"[{profile['base_url']}] Reentering on '{dumped_caches[-1]}' ...")
 
     @abstractmethod
     def archive_website(self, *args: Optional[Any], **kwargs: Optional[Any]) -> None:
