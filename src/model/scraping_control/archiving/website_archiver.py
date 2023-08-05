@@ -99,12 +99,7 @@ class WebsiteArchiver(ABC):
             else:
                 for root, _, files in os.walk(self.dump_folder, topdown=True):
                     dumped_caches = [
-                        file for file in files if file.startswith("MILESTONE")]
-                    if dumped_caches:
-                        self.load_state_dump(
-                            os.path.join(root, dumped_caches[-1]))
-                        self.logger.info(
-                            f"[{self.profile['base_url']}] Reentering on '{dumped_caches[-1]}' ...")
+                        os.path.join(root, file) for file in files if file.startswith("MILESTONE")]
                     break
             if dumped_caches:
                 self.load_state_dump(os.path.join(root, dumped_caches[-1]))
