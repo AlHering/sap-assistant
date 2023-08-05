@@ -13,6 +13,9 @@ import logging
 from src.control.plugin_controller import PluginController
 
 
+# TODO: Implement target masking for efficiency optimization
+# TODO: Implement architecture and block extraction for website analyzation purposes
+
 class WebsiteDatabase(object):
     """
     Class, representing website database.
