@@ -393,7 +393,7 @@ class WebsiteDatabase(object):
             session.commit()
             session.refresh(asset)
 
-            # Create or update raw page entry, if existing
+            # Create or update raw asset entry, if existing
             if asset_content is not None or asset_path is not None:
                 raw_assets = session.query(self.model[f"{self.schema}raw_assets"]).filter(
                     self.model[f"{self.schema}raw_assets"].asset_id == asset.asset_id
@@ -414,31 +414,6 @@ class WebsiteDatabase(object):
                     new_raw_asset.path = asset_path
                 session.add(new_raw_asset)
 
-            # Handling registration of link
-            if source_url is not None:
-                source_page = session.query(self.model[f"{self.schema}pages"]).filter(
-                    sqlalchemy_utility.SQLALCHEMY_FILTER_CONVERTER["&&"](
-                        self.model[f"{self.schema}pages"].page_url == source_url)
-                ).first()
-                if source_page.inactive != "":
-                    source_page.updated = datetime.datetime.now()
-                    source_page.inactive = ""
-
-                link = session.query(self.model[f"{self.schema}asset_network"]).filter(
-                    sqlalchemy_utility.SQLALCHEMY_FILTER_CONVERTER["&&"](
-                        self.model[f"{self.schema}asset_network"].source_page_url == source_page.page_url,
-                        self.model[f"{self.schema}asset_network"].target_asset_url == asset.asset_url
-                    )
-                ).first()
-                if link is None:
-                    link = self.model[f"{self.schema}asset_network"](
-                        source_page_url=source_page.page_url,
-                        target_asset_url=asset.asset_url,
-                        created=datetime.datetime.now()
-                    )
-                    session.add(link)
-                elif link.inactive != "":
-                    link.inactive = ""
             session.commit()
 
     def register_link(self, source_url: str, target_url: str, target_type: str) -> bool:
