@@ -12,7 +12,7 @@ from sqlalchemy import and_, or_, not_
 from sqlalchemy.ext.automap import automap_base, classname_for_table
 from typing import Any, Union, List, Tuple, Optional
 import copy
-import datetime
+from datetime import datetime as dt
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from src.configuration import configuration as cfg
@@ -22,8 +22,8 @@ import logging
 from src.control.plugin_controller import PluginController
 
 
-# TODO: Implement target masking for efficiency optimization
-# TODO: Implement architecture and block extraction for website analyzation purposes
+# TODO: Implement cache for efficiency optimization
+# TODO: Handle inactivity flag
 
 class WebsiteFilestore(object):
     """
@@ -52,7 +52,11 @@ class WebsiteFilestore(object):
             self.working_directory = os.path.join(
                 self.working_directory, self.schema)
         self.index_path = os.path.join(self.working_directory, "index.json")
-        self.index = {}
+        self.index = {
+            "pages": 0,
+            "assets": 0,
+            "next_urls": []
+        }
         self._initiate_infrastructure()
 
     """
@@ -85,41 +89,27 @@ class WebsiteFilestore(object):
         if self.verbose:
             self._logger.info(
                 f"Registering page for website {self.schema}: {page_url}")
-        with self.session_factory() as session:
-            page = session.query(self.model[f"{self.schema}pages"]).filter(
-                self.model[f"{self.schema}pages"].page_url == page_url
-            ).first()
-            if page is None:
-                if self.verbose:
-                    self._logger.info(
-                        f"Found already registered page for website {self.schema}: {page_url}")
-                page = self.model[f"{self.schema}pages"](
-                    page_url=page_url, created=datetime.datetime.now(), inactive="")
-                session.add(page)
-            elif page.inactive != "":
-                page.inactive = ""
+        content_path = file_system_utility.clean_directory_name(page_url)
+        data_path = content_path + "_data.json"
+        if not os.path.exists(data_path):
+            json_utility.save({
+                "page_id": self.index["pages"],
+                "page_url": page_url,
+                "created": dt.now(),
+                "updated": dt.now(),
+                "inactive": False
+            },
+                data_path)
+            self.index["pages"] += 1
+        else:
+            data = json_utility.load(data_path)
+            if data["inactive"]:
+                data["inactive"] = False
+                data["updated"] = dt.now()
+                json_utility.save(data, data_path)
 
-            page.updated = datetime.datetime.now()
-            session.commit()
-            session.refresh(page)
-
-            # Create or update raw page entry, if existing
-            if page_content is not None or page_path is not None:
-                raw_pages = session.query(self.model[f"{self.schema}raw_pages"]).filter(
-                    self.model[f"{self.schema}raw_pages"].page_id == page.page_id
-                ).all()
-                for raw_page in raw_pages:
-                    if raw_page.inactive == "":
-                        raw_page.inactive = "x"
-                        raw_page.updated = datetime.datetime.now()
-                new_raw_page = self.model[f"{self.schema}raw_pages"](
-                    page_id=page_url, created=datetime.datetime.now())
-                if page_content is not None:
-                    new_raw_page.raw = page_content
-                if page_path is not None:
-                    new_raw_page.path = page_path
-                session.add(new_raw_page)
-            session.commit()
+        if page_content is not None and not os.path.exists(content_path):
+            open(content_path, "w", encoding="utf-8").write(page_content)
 
     def register_asset(self, source_url: str, asset_url: str, asset_type: str, asset_content: str = None,
                        asset_encoding: str = None, asset_extension: str = None, asset_path: str = None) -> None:
@@ -137,75 +127,34 @@ class WebsiteFilestore(object):
         if self.verbose:
             self._logger.info(
                 f"Registering asset for website {self.schema}: {asset_url}")
-        with self.session_factory() as session:
-            asset = session.query(self.model[f"{self.schema}assets"]).filter(
-                self.model[f"{self.schema}assets"].asset_url == asset_url
-            ).first()
-            if asset is None:
-                asset = self.model[f"{self.schema}assets"](
-                    asset_url=asset_url, asset_type=asset_type, created=datetime.datetime.now())
-                session.add(asset)
-            elif asset.inactive != "":
-                if self.verbose:
-                    self._logger.info(
-                        f"Found already registered inactivate asset for website {self.schema}: {asset_url}")
-                asset.inactive = ""
-            else:
-                if self.verbose:
-                    self._logger.info(
-                        f"Found already registered asset for website {self.schema}: {asset_url}")
 
-            asset.updated = datetime.datetime.now()
-            session.commit()
-            session.refresh(asset)
+        content_path = file_system_utility.clean_directory_name(
+            asset_url) if asset_path is None else asset_path
+        data_path = content_path + "_data.json"
 
-            # Create or update raw page entry, if existing
-            if asset_content is not None or asset_path is not None:
-                raw_assets = session.query(self.model[f"{self.schema}raw_assets"]).filter(
-                    self.model[f"{self.schema}raw_assets"].asset_id == asset.asset_id
-                ).all()
-                for raw_asset in raw_assets:
-                    if raw_asset.inactive == "":
-                        raw_asset.inactive = "x"
-                        raw_asset.updated = datetime.datetime.now()
-                new_raw_asset = self.model[f"{self.schema}raw_assets"](
-                    asset_id=asset.asset_id,
-                    created=datetime.datetime.now()
-                )
-                if asset_content is not None:
-                    new_raw_asset.raw = asset_content
-                    new_raw_asset.encoding = asset_encoding
-                    new_raw_asset.extension = asset_extension
-                if asset_path is not None:
-                    new_raw_asset.path = asset_path
-                session.add(new_raw_asset)
+        if not os.path.exists(data_path):
+            json_utility.save({
+                "asset_id": self.index["assets"],
+                "asset_type": asset_type,
+                "asset_url": asset_url,
+                "created": dt.now(),
+                "updated": dt.now(),
+                "inactive": False
+            },
+                data_path)
+            self.index["assets"] += 1
+        else:
+            data = json_utility.load(data_path)
+            if data["inactive"]:
+                data["inactive"] = False
+                data["updated"] = dt.now()
+                json_utility.save(data, data_path)
 
-            # Handling registration of link
-            if source_url is not None:
-                source_page = session.query(self.model[f"{self.schema}pages"]).filter(
-                    sqlalchemy_utility.SQLALCHEMY_FILTER_CONVERTER["&&"](
-                        self.model[f"{self.schema}pages"].page_url == source_url)
-                ).first()
-                if source_page.inactive != "":
-                    source_page.updated = datetime.datetime.now()
-                    source_page.inactive = ""
-
-                link = session.query(self.model[f"{self.schema}asset_network"]).filter(
-                    sqlalchemy_utility.SQLALCHEMY_FILTER_CONVERTER["&&"](
-                        self.model[f"{self.schema}asset_network"].source_page_url == source_page.page_url,
-                        self.model[f"{self.schema}asset_network"].target_asset_url == asset.asset_url
-                    )
-                ).first()
-                if link is None:
-                    link = self.model[f"{self.schema}asset_network"](
-                        source_page_url=source_page.page_url,
-                        target_asset_url=asset.asset_url,
-                        created=datetime.datetime.now()
-                    )
-                    session.add(link)
-                elif link.inactive != "":
-                    link.inactive = ""
-            session.commit()
+        if not (asset_extension is None or content_path.endswith(asset_extension)):
+            content_path += asset_extension
+        if asset_content is not None and not os.path.exists(content_path):
+            open(content_path, "wb",
+                 encoding="utf-8" if asset_encoding is None else asset_encoding).write(asset_content)
 
     def register_link(self, source_url: str, target_url: str, target_type: str) -> bool:
         """
@@ -219,35 +168,26 @@ class WebsiteFilestore(object):
         if self.verbose:
             self._logger.info(
                 f"Registering link for website {self.schema}: {source_url} -> {target_url} ({target_type})")
-        target_column = getattr(
-            self.model[f"{self.schema}{target_type}_network"], f"target_{target_type}_url")
-        link = None
-        with self.session_factory() as session:
-            link = session.query(self.model[f"{self.schema}{target_type}_network"]).filter(
-                sqlalchemy_utility.SQLALCHEMY_FILTER_CONVERTER["&&"](
-                    self.model[f"{self.schema}{target_type}_network"].source_page_url == source_url,
-                    target_column == target_url
-                )
-            ).first()
-            if link is None:
-                creation_kwargs = {
-                    "source_page_url": source_url,
-                    f"target_{target_type}_url": target_url,
-                    "created": datetime.datetime.now()
-                }
-                if target_type == "page":
-                    creation_kwargs["followed"] = False
-                session.add(self.model[f"{self.schema}{target_type}_network"](
-                    **creation_kwargs
-                ))
-            else:
-                if self.verbose:
-                    self._logger.info(
-                        f"Found already registered link for {source_url} -> {target_url}")
-                link.inactive = ""
-                link.updated = datetime.datetime.now()
-            session.commit()
-            return link is None
+        link_path = file_system_utility.clean_directory_name(
+            source_url) + "_links.json"
+        if not os.path.exists(link_path):
+            data = {
+                "asset": [],
+                "page": []
+            }
+        else:
+            data = json_utility.load(link_path)
+        if target_url not in data[target_type]:
+            data[target_type].append(target_url)
+            json_utility.save(data, link_path)
+            if target_type == "page":
+                target_data_path = file_system_utility.clean_directory_name(
+                    target_url) + "_data.json"
+                if not os.path.exists(target_data_path):
+                    self.index["next_urls"].append(target_url)
+            return True
+        else:
+            return False
 
     def get_element_count(self) -> Tuple[int, int]:
         """
@@ -258,10 +198,8 @@ class WebsiteFilestore(object):
         if self.verbose:
             self._logger.info(
                 f"Counting {self.schema}'s tracked elements...")
-        page_count = int(self.engine.connect().execute(select(func.count()).select_from(
-            self.model[f"{self.schema}pages"])).scalar())
-        asset_count = int(self.engine.connect().execute(select(func.count()).select_from(
-            self.model[f"{self.schema}assets"])).scalar())
+        page_count = self.index["pages"]
+        asset_count = self.index["assets"]
         if self.verbose:
             self._logger.info(
                 f"Counted {page_count} pages and {asset_count} assets under {self.schema}'s tracked elements.")
@@ -276,45 +214,11 @@ class WebsiteFilestore(object):
         """
         if self.verbose:
             self._logger.info(f"Finished {self.schema}: {page_url}")
-        next_link = None
-        with self.session_factory() as session:
-            followed = session.query(self.model[f"{self.schema}page_network"]).filter(
-                sqlalchemy_utility.SQLALCHEMY_FILTER_CONVERTER["&&"](
-                    self.model[f"{self.schema}page_network"].followed == False,
-                    self.model[f"{self.schema}page_network"].target_page_url == page_url)
-            ).all()
-            for entry in followed:
-                entry.followed = True
-                entry.updated = datetime.datetime.now()
-            session.commit()
-            if self.verbose:
-                self._logger.info(f"Updated {self.schema}: {page_url} links")
 
-            while next_link is None:
-                next_link = session.query(self.model[f"{self.schema}page_network"]).filter(
-                    self.model[f"{self.schema}page_network"].followed == False
-                ).first()
-                if next_link is None:
-                    break
+        while page_url in self.index["next_urls"]:
+            self.index["next_urls"].remove(page_url)
 
-                alredy_visited = session.query(self.model[f"{self.schema}page_network"]).filter(
-                    sqlalchemy_utility.SQLALCHEMY_FILTER_CONVERTER["&&"](
-                        self.model[f"{self.schema}page_network"].followed == True,
-                        self.model[f"{self.schema}page_network"].target_page_url == next_link.target_page_url)
-                ).first()
-                if alredy_visited is not None:
-                    for alredy_visited in session.query(self.model[f"{self.schema}page_network"]).filter(
-                        sqlalchemy_utility.SQLALCHEMY_FILTER_CONVERTER["&&"](
-                            self.model[f"{self.schema}page_network"].followed == False,
-                            self.model[f"{self.schema}page_network"].target_page_url == next_link.target_page_url)
-                    ).all():
-                        alredy_visited.followed = True
-                        alredy_visited.updated = datetime.datetime.now()
-                    session.commit()
-                    next_link = None
-                else:
-                    next_link = next_link.target_page_url
-        return next_link
+        return self.index["next_urls"][0] if self.index["next_urls"] else None
 
     def check_for_existence(self, url: str, target_type: str) -> bool:
         """
@@ -327,16 +231,7 @@ class WebsiteFilestore(object):
         if self.verbose:
             self._logger.info(
                 f"Checking for existence {self.schema}: {url} ({target_type})")
-        found = False
-        url_column = getattr(
-            self.model[f"{self.schema}{target_type}s"], f"{target_type}_url")
-        inactive_column = getattr(
-            self.model[f"{self.schema}{target_type}s"], f"inactive")
-        with self.session_factory() as session:
-            entry = session.query(self.model[f"{self.schema}page_network"]).filter(
-                sqlalchemy_utility.SQLALCHEMY_FILTER_CONVERTER["&&"](
-                    url_column == False,
-                    inactive_column == "")
-            ).first()
-            found = entry is not None
-        return found
+        data_path = file_system_utility.clean_directory_name(
+            url) + "_data.json"
+
+        return os.path.exists(data_path)
