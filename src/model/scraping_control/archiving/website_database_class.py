@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+****************************************************
+*                ScrapingService                 
+*            (c) 2023 Alexander Hering             *
+****************************************************
+"""
 from sqlalchemy import MetaData, Table, Column, String, Boolean, Integer, JSON, Text, DateTime, CHAR, ForeignKey, Table, \
     Float, BLOB, TEXT, func, inspect, select, text
 from sqlalchemy import and_, or_, not_
