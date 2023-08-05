@@ -5,23 +5,18 @@
 *            (c) 2023 Alexander Hering             *
 ****************************************************
 """
-from sqlalchemy import MetaData, Table, Column, String, Boolean, Integer, JSON, Text, DateTime, CHAR, ForeignKey, Table, \
-    Float, BLOB, TEXT, func, inspect, select, text
-from sqlalchemy import and_, or_, not_
-from sqlalchemy.ext.automap import automap_base, classname_for_table
-from typing import Any, Union, List, Tuple, Optional
-import copy
+from sqlalchemy import Column, String, Boolean, Integer, JSON, Text, DateTime, CHAR, ForeignKey, func, select
+from sqlalchemy.ext.automap import automap_base
+from typing import Any, List, Tuple, Optional
 import datetime
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
 from src.configuration import configuration as cfg
-from src.utility.bronze import dictionary_utility, sqlalchemy_utility, time_utility
-import logging
-from src.control.plugin_controller import PluginController
+from src.utility.bronze import sqlalchemy_utility
+# from src.control.plugin_controller import PluginController
 
 
 # TODO: Implement target masking for efficiency optimization
 # TODO: Implement architecture and block extraction for website analyzation purposes
+# TODO: Implement plugin support
 
 class WebsiteDatabase(object):
     """
