@@ -6,19 +6,11 @@
 ****************************************************
 """
 import os
-from sqlalchemy import MetaData, Table, Column, String, Boolean, Integer, JSON, Text, DateTime, CHAR, ForeignKey, Table, \
-    Float, BLOB, TEXT, func, inspect, select, text
-from sqlalchemy import and_, or_, not_
-from sqlalchemy.ext.automap import automap_base, classname_for_table
-from typing import Any, Union, List, Tuple, Optional
-import copy
+from typing import Any, List, Tuple, Optional
 from datetime import datetime as dt
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
 from src.configuration import configuration as cfg
-from src.utility.bronze import dictionary_utility, sqlalchemy_utility, time_utility, json_utility
+from src.utility.bronze import json_utility
 from src.utility.silver import file_system_utility
-import logging
 from src.control.plugin_controller import PluginController
 
 
@@ -43,10 +35,7 @@ class WebsiteFilestore(object):
         self._logger = cfg.LOGGER
         self.verbose = verbose
         self._logger.info("Automapping existing structures")
-        self.base = automap_base()
         self.working_directory = cfg.ENV["WEBSITE_ARCHIVER_FOLDER"] if working_directory is None else working_directory
-        self.model = None
-        self.session_factory = None
         self.schema = schema
         if self.schema and not os.path.exists(os.path.join(self.working_directory, self.schema)):
             self.working_directory = os.path.join(
