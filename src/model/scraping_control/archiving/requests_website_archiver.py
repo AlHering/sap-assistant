@@ -43,6 +43,7 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
                 "https": "socks5://127.0.0.1:9050"
             }
         self._cache["milestones"] = self.profile.get("milestones", 300)
+        self._cache["last_milestone"] = self._cache.get("last_milestone", 0)
         self._cache["last_url"] = self._cache.get("last_url")
         self._cache["current_url"] = self._cache.get("current_url")
         self._cache["current_index"] = self._cache.get("current_index", 0)
@@ -59,25 +60,33 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
             next_url = self.get_next_url(self._cache["current_url"])
             while next_url is not None:
                 if self._cache["current_index"] % self._cache["milestones"] == 0 and self._cache["current_index"] != 0:
+                    latest_path = os.path.join(self.dump_folder, "latest.json")
+                    if os.path.exists(latest_path):
+                        os.rename(latest_path, os.path.join(
+                            self.dump_folder, f"MILESTONE_{self._cache['last_milestone']}.json"))
+                    self._cache["last_milestone"] = self._cache["current_index"]
                     self.create_state_dump(
-                        "crawling_milestone", f"MILESTONE_{self._cache['current_index']}.json")
+                        reason="archiving_milestone")
                 self._handle_next_page(next_url)
                 self._cache["last_url"] = self._cache["current_url"]
                 next_url = self.get_next_url(self._cache["current_url"])
         except Exception as ex:
-            self.create_state_dump({
-                "exception": str(ex),
-                "traceback": traceback.format_exc()
-            })
+            self.create_state_dump(
+                reason={
+                    "exception": str(ex),
+                    "traceback": traceback.format_exc(),
+                },
+                file_name="EXCEPTION.json"
+            )
             raise ex
-        self.create_state_dump("collection_finished",
-                               f"MILESTONE_{self._cache['current_index']}_FINISHED.json")
+        self.create_state_dump(reason="archiving_finished",
+                               file_name=f"MILESTONE_{self._cache['current_index']}_FINISHED.json")
 
-    def create_state_dump(self, reason: Optional[Any] = None, file_name: str = "EXCEPTION.json") -> None:
+    def create_state_dump(self, reason: Optional[Any] = None, file_name: str = "latest.json") -> None:
         """
         Method for creating state dump of archiver.
         :param reason: Reason for state dump.
-        :param file_name: File name. Defaults to "EXCEPTION.json".
+        :param file_name: File name. Defaults to "latest.json".
         """
         json_utility.save(
             {
@@ -154,10 +163,13 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
             self.logger.info(
                 f"[{self.profile['base_url']}] '{self._cache['current_url']}' exceeded limit of redirects, ignoring ...")
         except requests .exceptions.ConnectionError as ex:
-            self.create_state_dump({
-                "exception": str(ex),
-                "traceback": traceback.format_exc()
-            })
+            self.create_state_dump(
+                reason={
+                    "exception": str(ex),
+                    "traceback": traceback.format_exc()
+                },
+                file_name="EXCEPTION.json"
+            )
             # TODO: Implement appropriate methods on super-class level
             self.logger.warning(
                 f"[{self.profile['base_url']}] Connection error appeared! State dump created.")
