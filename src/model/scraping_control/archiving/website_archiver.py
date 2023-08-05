@@ -77,6 +77,7 @@ class WebsiteArchiver(ABC):
             "redownload_assets", redownload_assets)
         self.proxies = profile.get("proxies")
         self.failed = set()
+        self.reload_last_state = reload_last_state
 
         # Handle cache
         self.dump_folder = self.profile.get("dump_path", os.path.join(
@@ -84,7 +85,13 @@ class WebsiteArchiver(ABC):
         if not os.path.exists(self.dump_folder):
             os.makedirs(self.dump_folder)
         self._cache = {}
-        if reload_last_state:
+        self.load_latest_cache()
+
+    def load_latest_cache(self) -> None:
+        """
+        Method for loading latest cache dump from disk.
+        """
+        if self.reload_last_state:
             dumped_caches = []
             latest_path = os.path.join(self.dump_folder, "latest.json")
             if os.path.exists(latest_path):
@@ -97,12 +104,12 @@ class WebsiteArchiver(ABC):
                         self.load_state_dump(
                             os.path.join(root, dumped_caches[-1]))
                         self.logger.info(
-                            f"[{profile['base_url']}] Reentering on '{dumped_caches[-1]}' ...")
+                            f"[{self.profile['base_url']}] Reentering on '{dumped_caches[-1]}' ...")
                     break
             if dumped_caches:
                 self.load_state_dump(os.path.join(root, dumped_caches[-1]))
                 self.logger.info(
-                    f"[{profile['base_url']}] Reentering on '{dumped_caches[-1]}' ...")
+                    f"[{self.profile['base_url']}] Reentering on '{dumped_caches[-1]}' ...")
 
     @abstractmethod
     def archive_website(self, *args: Optional[Any], **kwargs: Optional[Any]) -> None:
