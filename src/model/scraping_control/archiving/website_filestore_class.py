@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+****************************************************
+*                ScrapingService                 
+*            (c) 2023 Alexander Hering             *
+****************************************************
+"""
 from sqlalchemy import MetaData, Table, Column, String, Boolean, Integer, JSON, Text, DateTime, CHAR, ForeignKey, Table, \
     Float, BLOB, TEXT, func, inspect, select, text
 from sqlalchemy import and_, or_, not_
@@ -36,11 +43,6 @@ class WebsiteFilestore(object):
         self._logger.info("Automapping existing structures")
         self.base = automap_base()
         self.working_directory = cfg.ENV["WEBSITE_ARCHIVER_FOLDER"] if working_directory is None else working_directory
-        self.base.prepare(autoload_with=self.engine, reflect=True)
-        self._logger.info("base created with")
-        self._logger.info(f"Classes: {self.base.classes.keys()}")
-        self._logger.info(f"Tables: {self.base.metadata.tables.keys()}")
-
         self.model = None
         self.session_factory = None
         self.schema = schema
