@@ -24,7 +24,7 @@ def clean_web_text(text: str) -> str:
     :param text: Text to clean.
     :return: Cleaned text.
     """
-    return remove_html_tags(clean_html_codec(str))
+    return remove_html_tags(clean_html_codec(text))
 
 
 class ScrapingModule(object):
@@ -78,21 +78,22 @@ class TableScrapingModule(ScrapingModule):
             A callback function should take the target entity as first, the entity data (dictionary) as second argument.
         """
         target_pages = [urlparse(url).netloc for url in target_pages]
+        print(target_pages)
         super().__init__(target_pages, target_entry, entry_callback)
 
         self.collection_dicts = {
-            "se80.co.uk": {
+            "www.se80.co.uk": {
                 "name": "//header/title/text()",
-                "content": ["//div[@id='wrapper']//div[@class='pageContent']/h2[contains(./text(), ' data')]"],
-                "description": ["//div[@id='wrapper']//div[@class='pageContent']/p/text()"]
+                "content": "//div[@id='wrapper']//div[@class='pageContent']/h2[contains(./text(), ' data')]/text()",
+                "description": "//div[@id='wrapper']//div[@class='pageContent']/p/text()"
             }
 
         }
         self.cleaning_dicts = {
-            "se80.co.uk": {
+            "www.se80.co.uk": {
                 "name": lambda x: x[0].split(" SAP (")[0] if x else None,
                 "content": lambda x: x[0].split(" data")[0] if x else None,
-                "description": lambda x: "\n".join([clean_web_text(elem) for elem in x]) if x else None,
+                "description": lambda x: "\n".join([clean_web_text(elem) for elem in x]) if x else None
             }
 
         }
@@ -106,7 +107,7 @@ class TableScrapingModule(ScrapingModule):
         """
         parsed_url = urlparse(page_url)
         if parsed_url.netloc in self.target_pages:
-            if parsed_url.netloc == "se80.co.uk" and "/sap-tables/" in page_url:
+            if parsed_url.netloc == "www.se80.co.uk" and "/sap-tables/" in page_url:
                 return True
         return False
 
@@ -118,41 +119,43 @@ class TableScrapingModule(ScrapingModule):
         :return: True, if scraping process was sucessful, else False.
         """
         data = {}
-        if "se80.co.uk" in page_url:
-            source = "se80.co.uk"
-        try:
-            data = requests_utility.safely_collect(
-                page_content, self.collection_dicts[source], self.cleaning_dicts[source])
-            data["url"] = page_url
+        if "www.se80.co.uk" in page_url:
+            source = "www.se80.co.uk"
 
-            if source == "se80.co.uk":
-                data["name"] = page_url.split("/sap-tables/?name=")[1] if data["name"] is None and "/sap-tables/?name=" in page_url
-                metadata = {
-                    "relations": {
-                        a.text: a.get("href") for a in page_content.xpath("//div[@id='rel']/div[@class='sapTable']/a")
-                    }
+        data = requests_utility.safely_collect(
+            page_content, self.collection_dicts[source], self.cleaning_dicts[source])
+        data["url"] = page_url
+
+        if source == "www.se80.co.uk":
+            if data["name"] is None and "/sap-tables/?name=" in page_url:
+                data["name"] = page_url.split("/sap-tables/?name=")[1]
+            metadata = {
+                "relations": {
+                    a.text: a.get("href") for a in page_content.xpath("//div[@id='rel']/div[@class='sapTable']/a")
                 }
+            }
 
-                fields = {"keys": [], "non-keys": []}
-                key_fields_table = page_content.xpath("//div[@id='wrapper']//div[@class='pageContent']//table[1]")
-                table_fields_table = page_content.xpath("//div[@id='wrapper']//div[@class='pageContent']//table[2]")
-                key_columns = key_fields_table.xpath("./tbody/tr[@class='headField']/td/text()")
-                table_columns = table_fields_table.xpath("./tbody/tr[@class='headField']/td/text()")
-                
-                for row in key_fields_table.xpath("./tr[not(contains(./@class, 'headField'))]"):
-                    values = row.xpath("./td/text()")
-                    fields["keys"].append({
-                        key_column: values[column_index] for column_index, key_column in enumerate(key_columns)
-                    })
-                for row in table_fields_table.xpath("./tr[not(contains(./@class, 'headField'))]"):
-                    values = row.xpath("./td/text()")
-                    fields["keys"].append({
-                        non_key_column: values[column_index] for column_index, non_key_column in enumerate(table_columns)
-                    })
-                
-                data["meta_data"] = metadata
-                data["fields"] = fields
-            self.entry_callback(self.target_entry, data)
-            return True
-        except:
-            return False
+            fields = {"keys": [], "non-keys": []}
+            key_fields_table = page_content.xpath(
+                "//div[@id='wrapper']//div[@class='pageContent']//table[1]")
+            table_fields_table = page_content.xpath(
+                "//div[@id='wrapper']//div[@class='pageContent']//table[2]")
+            key_columns = key_fields_table.xpath(
+                "./tbody/tr[@class='headField']/td/text()")
+            table_columns = table_fields_table.xpath(
+                "./tbody/tr[@class='headField']/td/text()")
+
+            for row in key_fields_table.xpath("./tr[not(contains(./@class, 'headField'))]"):
+                values = row.xpath("./td/text()")
+                fields["keys"].append({
+                    key_column: values[column_index] for column_index, key_column in enumerate(key_columns)
+                })
+            for row in table_fields_table.xpath("./tr[not(contains(./@class, 'headField'))]"):
+                values = row.xpath("./td/text()")
+                fields["keys"].append({
+                    non_key_column: values[column_index] for column_index, non_key_column in enumerate(table_columns)
+                })
+
+            data["meta_data"] = metadata
+            data["fields"] = fields
+        self.entry_callback(self.target_entry, data)
