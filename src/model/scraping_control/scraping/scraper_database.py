@@ -71,6 +71,11 @@ class SAPObjectDatabase(object):
             url = Column(Text, nullable=False, unique=True,
                          comment="URL of entry.")
 
+            name = Column(String,
+                          comment="Name of entry.")
+            content = Column(Text,
+                             comment="Content of entry.")
+
             description = Column(Text,
                                  comment="Description of entry.")
             meta_data = Column(JSON,
