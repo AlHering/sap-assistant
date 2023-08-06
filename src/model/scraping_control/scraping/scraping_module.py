@@ -75,6 +75,7 @@ class TableScrapingModule(ScrapingModule):
         :param target_pages: Target pages.
         :param target_entry: Target entry name.
         :param entry_callback: Callback function for writing entry data to storage.
+            A callback function should take the target entity as first, the entity data (dictionary) as second argument.
         """
         target_pages = [urlparse(url).netloc for url in target_pages]
         super().__init__(target_pages, target_entry, entry_callback)
@@ -84,7 +85,6 @@ class TableScrapingModule(ScrapingModule):
                 "name": "//header/title/text()",
                 "content": ["//div[@id='wrapper']//div[@class='pageContent']/h2[contains(./text(), ' data')]"],
                 "description": ["//div[@id='wrapper']//div[@class='pageContent']/p/text()"]
-
             }
 
         }
@@ -118,9 +118,41 @@ class TableScrapingModule(ScrapingModule):
         :return: True, if scraping process was sucessful, else False.
         """
         data = {}
+        if "se80.co.uk" in page_url:
+            source = "se80.co.uk"
         try:
+            data = requests_utility.safely_collect(
+                page_content, self.collection_dicts[source], self.cleaning_dicts[source])
             data["url"] = page_url
 
+            if source == "se80.co.uk":
+                data["name"] = page_url.split("/sap-tables/?name=")[1] if data["name"] is None and "/sap-tables/?name=" in page_url
+                metadata = {
+                    "relations": {
+                        a.text: a.get("href") for a in page_content.xpath("//div[@id='rel']/div[@class='sapTable']/a")
+                    }
+                }
+
+                fields = {"keys": [], "non-keys": []}
+                key_fields_table = page_content.xpath("//div[@id='wrapper']//div[@class='pageContent']//table[1]")
+                table_fields_table = page_content.xpath("//div[@id='wrapper']//div[@class='pageContent']//table[2]")
+                key_columns = key_fields_table.xpath("./tbody/tr[@class='headField']/td/text()")
+                table_columns = table_fields_table.xpath("./tbody/tr[@class='headField']/td/text()")
+                
+                for row in key_fields_table.xpath("./tr[not(contains(./@class, 'headField'))]"):
+                    values = row.xpath("./td/text()")
+                    fields["keys"].append({
+                        key_column: values[column_index] for column_index, key_column in enumerate(key_columns)
+                    })
+                for row in table_fields_table.xpath("./tr[not(contains(./@class, 'headField'))]"):
+                    values = row.xpath("./td/text()")
+                    fields["keys"].append({
+                        non_key_column: values[column_index] for column_index, non_key_column in enumerate(table_columns)
+                    })
+                
+                data["meta_data"] = metadata
+                data["fields"] = fields
+            self.entry_callback(self.target_entry, data)
             return True
         except:
             return False
