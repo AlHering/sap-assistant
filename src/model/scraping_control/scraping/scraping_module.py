@@ -54,12 +54,11 @@ class ScrapingModule(object):
         pass
 
     @abstractmethod
-    def scrape(self, page_url: str, page_content: html.HtmlElement) -> bool:
+    def scrape(self, page_url: str, page_content: html.HtmlElement) -> None:
         """
         Method for scraping target entry data from side.
         :param page_url: Current page URL.
         :param page_content: Current page content.
-        :return: True, if scraping process was sucessful, else False.
         """
         pass
 
@@ -111,12 +110,11 @@ class TableScrapingModule(ScrapingModule):
                 return True
         return False
 
-    def scrape(self, page_url: str, page_content: html.HtmlElement) -> bool:
+    def scrape(self, page_url: str, page_content: html.HtmlElement) -> None:
         """
         Method for scraping target entry data from side.
         :param page_url: Current page URL.
         :param page_content: Current page content.
-        :return: True, if scraping process was sucessful, else False.
         """
         data = {}
         if "www.se80.co.uk" in page_url:
