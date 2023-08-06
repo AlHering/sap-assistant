@@ -2,7 +2,7 @@
 """
 ****************************************************
 *                     Utility                      *
-*            (c) 2020-2021 Alexander Hering        *
+*            (c) 2020-2023 Alexander Hering        *
 ****************************************************
 """
 import os
@@ -78,6 +78,15 @@ def clean_html_codec(text: str) -> str:
             for elem in HTML_CODEC_DICT[codec]:
                 text = text.replace(elem, HTML_CODEC_DICT[codec][elem])
     return text
+
+
+def remove_html_tags(text: str) -> str:
+    """
+    Function for removing html tags from text.
+    :param text: Text to remove tags from.
+    :return: Cleaned text.
+    """
+    return re.sub(r"<.*?>", "", text)
 
 
 def extract_first_match(pattern: str, text: str) -> Optional[str]:
