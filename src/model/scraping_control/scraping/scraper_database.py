@@ -80,10 +80,8 @@ class SAPObjectDatabase(object):
                                  comment="Description of entry.")
             meta_data = Column(JSON,
                                comment="Metadata of entry.")
-            keys_fields = Column(JSON,
-                                 comment="Key fields of entry.")
-            table_fields = Column(JSON,
-                                  comment="Table fields of entry.")
+            fields = Column(JSON,
+                            comment="Fields of entry.")
 
             created = Column(DateTime, default=func.now(),
                              comment="Timestamp of creation.")
