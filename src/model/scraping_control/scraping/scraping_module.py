@@ -129,30 +129,28 @@ class TableScrapingModule(ScrapingModule):
         if source == "www.se80.co.uk":
             if data["name"] is None and "/sap-tables/?name=" in page_url:
                 data["name"] = page_url.split("/sap-tables/?name=")[1]
-            metadata = {
-                "relations": {
-                    a.text: a.get("href") for a in page_content.xpath("//div[@id='rel']/div[@class='sapTable']/a")
-                }
-            }
+            metadata = {}
 
             fields = {"keys": [], "non-keys": []}
-            key_fields_table = page_content.xpath(
-                "//div[@id='wrapper']//div[@class='pageContent']//table[1]")
-            table_fields_table = page_content.xpath(
-                "//div[@id='wrapper']//div[@class='pageContent']//table[2]")
+            tables = page_content.xpath(
+                "//div[@id='wrapper']//div[@class='pageContent']//table")
+            key_fields_table = tables[0]
+            table_fields_table = tables[1]
             key_columns = key_fields_table.xpath(
-                "./tbody/tr[@class='headField']/td/text()")
+                ".//tr[@class='headField']/td/b/text()")
             table_columns = table_fields_table.xpath(
-                "./tbody/tr[@class='headField']/td/text()")
+                ".//tr[@class='headField']/td/b/text()")
 
             for row in key_fields_table.xpath("./tr[not(contains(./@class, 'headField'))]"):
-                values = row.xpath("./td/text()")
+                values = [elem.xpath("./a")[0].text if elem.xpath("./a")
+                          else elem.text for elem in row.xpath("./td")]
                 fields["keys"].append({
                     key_column: values[column_index] for column_index, key_column in enumerate(key_columns)
                 })
             for row in table_fields_table.xpath("./tr[not(contains(./@class, 'headField'))]"):
-                values = row.xpath("./td/text()")
-                fields["keys"].append({
+                values = [elem.xpath("./a")[0].text if elem.xpath("./a")
+                          else elem.text for elem in row.xpath("./td")]
+                fields["non-keys"].append({
                     non_key_column: values[column_index] for column_index, non_key_column in enumerate(table_columns)
                 })
 
