@@ -14,7 +14,17 @@ from sqlalchemy.ext.automap import automap_base
 from typing import Any, List, Tuple, Optional
 import datetime
 from src.configuration import configuration as cfg
-from src.utility.bronze import sqlalchemy_utility
+from src.utility.bronze import sqlalchemy_utility, requests_utility
+from src.utility.bronze.string_utility import clean_html_codec, remove_html_tags
+
+
+def clean_web_text(text: str) -> str:
+    """
+    Function for cleaning web text.
+    :param text: Text to clean.
+    :return: Cleaned text.
+    """
+    return remove_html_tags(clean_html_codec(str))
 
 
 class ScrapingModule(object):
@@ -69,6 +79,24 @@ class TableScrapingModule(ScrapingModule):
         target_pages = [urlparse(url).netloc for url in target_pages]
         super().__init__(target_pages, target_entry, entry_callback)
 
+        self.collection_dicts = {
+            "se80.co.uk": {
+                "name": "//header/title/text()",
+                "content": ["//div[@id='wrapper']//div[@class='pageContent']/h2[contains(./text(), ' data')]"],
+                "description": ["//div[@id='wrapper']//div[@class='pageContent']/p/text()"]
+
+            }
+
+        }
+        self.cleaning_dicts = {
+            "se80.co.uk": {
+                "name": lambda x: x[0].split(" SAP (")[0] if x else None,
+                "content": lambda x: x[0].split(" data")[0] if x else None,
+                "description": lambda x: "\n".join([clean_web_text(elem) for elem in x]) if x else None,
+            }
+
+        }
+
     def active(self, page_url: str, page_content: html.HtmlElement) -> bool:
         """
         Method for checking active status on page content.
@@ -91,7 +119,7 @@ class TableScrapingModule(ScrapingModule):
         """
         data = {}
         try:
-            data["name"] = page_url.split("/?name=")[1]
+            data["url"] = page_url
 
             return True
         except:
