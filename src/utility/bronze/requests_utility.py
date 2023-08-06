@@ -64,20 +64,33 @@ def safely_get_elements(html_element: html.HtmlElement, xpath: str) -> Optional[
     return res[0] if res else None
 
 
-def safely_collect(html_element: html.HtmlElement, data: dict) -> dict:
+def safely_collect(html_element: html.HtmlElement, xpath_dict: dict, cleaning_dict: dict = None) -> dict:
     """
     Function for safely collecting data by xpath into dictionary, meaning not found elements get skipped. In later cases
     the collected value will be None.
     :param html_element: LXML Html Element.
-    :param data: Data collection dictionary.
+    :param xpath_dict: XPATH dictionary for collecting.
+    :param cleaning_dict: Dictionary containing cleaning lambda functions if necessary.
+        Defaults to None
     :return: In dict collected data.
     """
+    cleaning_dict = {} if cleaning_dict is None else cleaning_dict
     return_data = {}
-    for elem in data:
-        if isinstance(data[elem], dict):
-            return_data[elem] = safely_collect(html_element, data[elem])
-        elif isinstance(data[elem], str):
-            return_data[elem] = safely_get_elements(html_element, data[elem])
+    for elem in xpath_dict:
+        if isinstance(xpath_dict[elem], dict):
+            return_data[elem] = safely_collect(html_element, xpath_dict[elem])
+        elif isinstance(xpath_dict[elem], str):
+            return_data[elem] = safely_get_elements(
+                html_element, xpath_dict[elem])
+            if elem in cleaning_dict:
+                return_data[elem] = cleaning_dict[elem](return_data[elem])
+        elif isinstance(xpath_dict[elem], list):
+            for xpath_index, xpath in enumerate(xpath_dict[elem]):
+                return_data[elem] = safely_get_elements(
+                    html_element, xpath)
+                if elem in cleaning_dict and return_data[elem] is not None:
+                    return_data[elem] = cleaning_dict[elem][xpath_index](
+                        return_data[elem])
     return return_data
 
 
