@@ -53,7 +53,7 @@ def safely_get_elements(html_element: html.HtmlElement, xpath: str) -> List[Any]
     return html_element.xpath(xpath)
 
 
-def safely_get_elements(html_element: html.HtmlElement, xpath: str) -> Optional[Any]:
+def safely_get_element(html_element: html.HtmlElement, xpath: str) -> Optional[Any]:
     """
     Function for safely searching for elements in a Selenium WebElement.
     :param resp: Response to search in.
