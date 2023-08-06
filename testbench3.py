@@ -34,5 +34,4 @@ if __name__ == "__main__":
         response.content if response.content else "<!DOCTYPE html><html>")
     print(module.active(response.url, html_content))
     if module.active(response.url, html_content):
-        print(
-            f"Process finished successful? {module.scrape(response.url, html_content)}")
+        module.scrape(response.url, html_content)
