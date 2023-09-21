@@ -82,7 +82,7 @@ class TableScrapingModule(ScrapingModule):
 
         self.collection_dicts = {
             "www.se80.co.uk": {
-                "name": "//header/title/text()",
+                "name": "//head/title/text()",
                 "content": "//div[@id='wrapper']//div[@class='pageContent']/h2[contains(./text(), ' data')]/text()",
                 "description": "//div[@id='wrapper']//div[@class='pageContent']/p/text()"
             }
@@ -123,6 +123,7 @@ class TableScrapingModule(ScrapingModule):
         data = requests_utility.safely_collect(
             page_content, self.collection_dicts[source], self.cleaning_dicts[source])
         data["url"] = page_url
+        data["raw"] = html.tostring(page_content)
 
         if source == "www.se80.co.uk":
             if data["name"] is None and "/sap-tables/?name=" in page_url:
@@ -154,4 +155,74 @@ class TableScrapingModule(ScrapingModule):
 
             data["meta_data"] = metadata
             data["fields"] = fields
+        self.entry_callback(self.target_entry, data)
+
+
+class TransactionScrapingModule(ScrapingModule):
+    """
+    Class, representing a transaction scraping module for SAP transaction data.
+    """
+
+    def __init__(self, target_pages: List[str], target_entry: str, entry_callback: Any) -> None:
+        """
+        Initiation method.
+        :param target_pages: Target pages.
+        :param target_entry: Target entry name.
+        :param entry_callback: Callback function for writing entry data to storage.
+            A callback function should take the target entity as first, the entity data (dictionary) as second argument.
+        """
+        target_pages = [urlparse(url).netloc for url in target_pages]
+        print(target_pages)
+        super().__init__(target_pages, target_entry, entry_callback)
+
+        self.collection_dicts = {
+            "www.se80.co.uk": {
+                "name": "//head/title/text()",
+                "content": "//div[@id='mainCont']//div[@class='pageContent']/h1[contains(./text(), ' TCode - ')]/text()",
+                "description": "//div[@id='mainCont']//div[@class='pageContent']/(p|h1|h2)/text()"
+            }
+
+        }
+        self.cleaning_dicts = {
+            "www.se80.co.uk": {
+                "name": lambda x: x[0].split("SAP ")[1].split(" TCode ")[0] if x else None,
+                "content": lambda x: x[0].split(" TCode - ")[1] if x else None,
+                "description": lambda x: "\n".join([clean_web_text(elem) for elem in x]) if x else None
+            }
+
+        }
+
+    def active(self, page_url: str, page_content: html.HtmlElement) -> bool:
+        """
+        Method for checking active status on page content.
+        :param page_url: Current page URL.
+        :param page_content: Current page content.
+        :return: True, if scraping module is active on given page, else False.
+        """
+        parsed_url = urlparse(page_url)
+        if parsed_url.netloc in self.target_pages:
+            if parsed_url.netloc == "www.se80.co.uk" and "/sap-tcodes/" in page_url:
+                return True
+        return False
+
+    def scrape(self, page_url: str, page_content: html.HtmlElement) -> None:
+        """
+        Method for scraping target entry data from side.
+        :param page_url: Current page URL.
+        :param page_content: Current page content.
+        """
+        data = {}
+        if "www.se80.co.uk" in page_url:
+            source = "www.se80.co.uk"
+
+        data = requests_utility.safely_collect(
+            page_content, self.collection_dicts[source], self.cleaning_dicts[source])
+        data["url"] = page_url
+        data["raw"] = html.tostring(page_content)
+
+        if source == "www.se80.co.uk":
+            if data["name"] is None and "/sap-tcodes/?name=" in page_url:
+                data["name"] = page_url.split("/sap-tcodes/?name=")[1]
+            metadata = {}
+
         self.entry_callback(self.target_entry, data)
