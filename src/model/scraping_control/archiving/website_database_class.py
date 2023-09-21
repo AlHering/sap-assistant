@@ -297,6 +297,8 @@ class WebsiteDatabase(object):
             self._logger.info(f"self.model after addition: {self.model}")
         self._logger.info("Creating new structures")
         self.base.metadata.create_all(bind=self.engine)
+        self.session_factory = sqlalchemy_utility.get_session_factory(
+                    self.engine)
 
     """
     Interfacing methods
