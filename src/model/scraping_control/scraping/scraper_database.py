@@ -70,6 +70,8 @@ class SAPObjectDatabase(object):
                         comment="ID of the entry.")
             url = Column(Text, nullable=False, unique=True,
                          comment="URL of entry.")
+            raw = Column(Text, nullable=False, unique=True,
+                         comment="Raw page content of entry.")
 
             name = Column(String,
                           comment="Name of entry.")
@@ -102,6 +104,8 @@ class SAPObjectDatabase(object):
                         comment="ID of the entry.")
             url = Column(Text, nullable=False, unique=True,
                          comment="URL of entry.")
+            raw = Column(Text, nullable=False, unique=True,
+                         comment="Raw page content of entry.")
 
             created = Column(DateTime, default=func.now(),
                              comment="Timestamp of creation.")
@@ -122,6 +126,8 @@ class SAPObjectDatabase(object):
                         comment="ID of the entry.")
             url = Column(Text, nullable=False, unique=True,
                          comment="URL of entry.")
+            raw = Column(Text, nullable=False, unique=True,
+                         comment="Raw page content of entry.")
 
             created = Column(DateTime, default=func.now(),
                              comment="Timestamp of creation.")
@@ -142,6 +148,8 @@ class SAPObjectDatabase(object):
                         comment="ID of the entry.")
             url = Column(Text, nullable=False, unique=True,
                          comment="URL of entry.")
+            raw = Column(Text, nullable=False, unique=True,
+                         comment="Raw page content of entry.")
 
             created = Column(DateTime, default=func.now(),
                              comment="Timestamp of creation.")
@@ -162,6 +170,8 @@ class SAPObjectDatabase(object):
                         comment="ID of the entry.")
             url = Column(Text, nullable=False, unique=True,
                          comment="URL of entry.")
+            raw = Column(Text, nullable=False, unique=True,
+                         comment="Raw page content of entry.")
 
             created = Column(DateTime, default=func.now(),
                              comment="Timestamp of creation.")
