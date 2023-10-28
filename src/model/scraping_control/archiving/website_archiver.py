@@ -49,11 +49,6 @@ class WebsiteArchiver(ABC):
         self.logger = cfg.LOGGER
         self.logger.info(
             f"[{profile['base_url']}] Initializing WebsiteArchiver {self} with profile: {profile}")
-        # Handling data backend
-        self.database = WebsiteDatabase(profile.get(
-            "database_uri"), schema=file_system_utility.clean_directory_name(self.base_url))
-        self.media_handler = media_metadata.MediaMetadata()
-        self.media_metadata = self.media_handler.media
 
         # Handle archiver instance variables
         self.profile = profile
@@ -65,6 +60,12 @@ class WebsiteArchiver(ABC):
         self.base_url_base = urlparse(self.base_url).netloc
         self.allowed_bases = self.allowed_bases if self.allowed_bases is not None else [
             self.base_url_base]
+
+        # Handling data backend
+        self.database = WebsiteDatabase(profile.get(
+            "database_uri"), schema=file_system_utility.clean_directory_name(self.base_url))
+        self.media_handler = media_metadata.MediaMetadata()
+        self.media_metadata = self.media_handler.media
         self.schemas = {}
         self.page_counter, self.asset_counter = self.database.get_element_count()
         self.logger.info(
