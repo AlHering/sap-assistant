@@ -17,12 +17,15 @@ class BasicSQLAlchemyInterface(object):
     Class, representing a basic SQL Alchemy interface.
     """
 
-    def __init__(self, working_directory: str, database_uri: str, population_function: Any, logger: Any = None) -> None:
+    def __init__(self, working_directory: str, database_uri: str, population_function: Any, schema: str = None,
+                 logger: Any = None) -> None:
         """
         Initiation method.
         :param working_directory: Working directory.
         :param database_uri: Database URI.
         :param population_function: A function, taking an engine, schema and a dataclass dictionary (later one can be empty and is to be populated).
+        :param schema: Schema to use.
+            Defaults to None in which case no schema is used.
         :param logger: Logger instance. 
             Defaults to None in which case separate logging is disabled.
         """
@@ -32,12 +35,12 @@ class BasicSQLAlchemyInterface(object):
             os.makedirs(self.working_directory)
         self.database_uri = database_uri
         self.population_function = population_function
+        self.schema = schema
 
         # Database infrastructure
         self.base = None
         self.engine = None
         self.model = None
-        self.schema = None
         self.session_factory = None
         self.primary_keys = None
         self._setup_database()
@@ -46,15 +49,14 @@ class BasicSQLAlchemyInterface(object):
         """
         Internal method for setting up database infastructure.
         """
-        if self.logger is not None:
+        if self._logger is not None:
             self._logger.info("Automapping existing structures")
         self.base = sqlalchemy_utility.automap_base()
         self.engine = sqlalchemy_utility.get_engine(self.database_uri)
 
         self.model = {}
-        self.schema = "backend."
 
-        if self.logger is not None:
+        if self._logger is not None:
             self._logger.info(
                 f"Generating model tables for website with schema {self.schema}")
         self.population_function(
@@ -63,14 +65,14 @@ class BasicSQLAlchemyInterface(object):
         self.base.prepare(autoload_with=self.engine)
         self.session_factory = sqlalchemy_utility.get_session_factory(
             self.engine)
-        if self.logger is not None:
+        if self._logger is not None:
             self._logger.info("base created with")
             self._logger.info(f"Classes: {self.base.classes.keys()}")
             self._logger.info(f"Tables: {self.base.metadata.tables.keys()}")
 
         self.primary_keys = {
             object_class: self.model[object_class].__mapper__.primary_key[0].name for object_class in self.model}
-        if self.logger is not None:
+        if self._logger is not None:
             self._logger.info(f"Datamodel after addition: {self.model}")
             for object_class in self.model:
                 self._logger.info(
