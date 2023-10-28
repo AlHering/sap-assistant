@@ -56,27 +56,33 @@ def safely_create_path(path: str) -> None:
         os.makedirs(path)
 
 
-def get_all_files(path: str) -> List[str]:
+def get_all_files(path: str, include_root: bool = True) -> List[str]:
     """
     Function for collecting all files (including nested files) under given directory.
     :param path: Root path to start file search in.
+    :param include_root: Flag, declaring whether to include root in returned paths.
+    :return: List of files.
     """
     file_list = []
     for root, dirs, files in os.walk(path, topdown=True):
         for file in files:
-            file_list.append(os.path.join(root, file))
+            file_list.append(os.path.join(root, file)
+                             if include_root else file)
     return list(set(file_list))
 
 
-def get_all_folders(path: str) -> List[str]:
+def get_all_folders(path: str, include_root: bool = True) -> List[str]:
     """
     Function for collecting all folders (including nested folders) under given directory.
     :param path: Root path to start folder search in.
+    :param include_root: Flag, declaring whether to include root in returned paths.
+    :return: List of folders.
     """
     folder_list = []
     for root, dirs, files in os.walk(path, topdown=True):
         for folder in dirs:
-            folder_list.append(os.path.join(root, folder))
+            folder_list.append(os.path.join(root, folder)
+                               if include_root else folder)
     return list(set(folder_list))
 
 

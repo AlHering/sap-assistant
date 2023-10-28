@@ -7,9 +7,9 @@
 """
 import copy
 from enum import Enum
-from sqlalchemy import Column, String, Boolean, Integer, JSON, Text, DateTime, CHAR, ForeignKey, Table, Float, BLOB, TEXT
+from sqlalchemy import Column, String, Boolean, Integer, JSON, Text, DateTime, CHAR, ForeignKey, Table, Float, BLOB, Uuid, func
 from sqlalchemy.orm import Session, relationship
-from sqlalchemy import and_, or_, not_
+from sqlalchemy import and_, or_, not_, select
 from sqlalchemy import create_engine
 from sqlalchemy.ext.automap import automap_base, classname_for_table
 from sqlalchemy.dialects.mysql import LONGTEXT
@@ -19,6 +19,8 @@ from sqlalchemy.sql import text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.exc import ProgrammingError, OperationalError
+from datetime import datetime as dt
+from uuid import UUID
 from typing import List, Union, Any, Optional
 
 # Dictionary, mapping filter types of filters to SQLAlchemy-compatible filters
@@ -61,8 +63,8 @@ class Dialect(Enum):
     POSTGRESQL = 6
 
 
-# Conversion dictionary for SQLAlchemy typing
-SQLALCHEMY_TYPING_DICTIONARY = {
+# Conversion dictionary for SQLAlchemy typing from type string
+SQLALCHEMY_TYPING_FROM_STRING_DICTIONARY = {
     "int": Integer,
     "dict": JSON,
     "datetime": DateTime,
@@ -74,6 +76,8 @@ SQLALCHEMY_TYPING_DICTIONARY = {
     "longtext": Text,
     "float_": Float,
     "float": Float,
+    "blob": BLOB,
+    "uuid": Uuid
 }
 
 
@@ -139,7 +143,16 @@ def get_classes_from_base(base: Any) -> dict:
             base.metadata.tables}
 
 
-def create_mapping_from_dictionary(mapping_base: Any, entity_type: str, column_data: dict, linkage_data: dict = None, typing_translation: dict = SQLALCHEMY_TYPING_DICTIONARY) -> Any:
+def get_entry_count(engine: Engine, table: Table) -> int:
+    """
+    Method for acquiring object count.
+    :param object_type: Target object type.
+    :return: Number of objects.
+    """
+    return int(engine.connect().execute(select(func.count()).select_from(table)).scalar())
+
+
+def create_mapping_from_dictionary(mapping_base: Any, entity_type: str, column_data: dict, linkage_data: dict = None, typing_translation: dict = SQLALCHEMY_TYPING_FROM_STRING_DICTIONARY) -> Any:
     """
     Function for creating database mapping from dictionary.
     :param mapping_base: Mapping base class.

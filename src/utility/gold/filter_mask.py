@@ -8,7 +8,7 @@
 # In-depth documentation can be found under utility/docs/entity_data_interfaces.md
 import copy
 from typing import Union, Any, List
-from . import dictionary_utility
+from ..bronze import dictionary_utility
 from ..bronze.comparison_utility import COMPARISON_METHOD_DICTIONARY as CMD
 
 
@@ -82,12 +82,13 @@ class FilterMask(object):
     "OR"-Logic can be implemented, by creating different FilterMasks and wrapping their checks into an any()-function.
     """
 
-    def __init__(self, expressions: List[list], operator_dictionary: dict = CMD, deep: bool = False,
+    def __init__(self, expressions: List[list], operator_dictionary: dict = None, deep: bool = False,
                  relative: bool = False, reference: Any = None) -> None:
         """
         Initiation method for FilterMasks objects.
         :param expressions: List of expressions.
         :param operator_dictionary: Operator dictionary to initiate FilterMasks with.
+            Defaults to None in which case the default utility comparison dictionary is used.
         :param deep: Flag, declaring whether filters are deep. Defaults to False. Examples:
             - Flat filter expression = ["key", "operator", "value"]
             - Deep filter expression = [["key", "nested key"], "operator", "value"]
@@ -104,8 +105,8 @@ class FilterMask(object):
         self.deep = deep
         self.relative = relative
         self.reference = reference
-        self.add_filter_expressions(expressions)
         self.set_operator_dictionary(operator_dictionary)
+        self.add_filter_expressions(expressions)
 
     def add_filter_expressions(self, expressions: list) -> None:
         """
