@@ -5,12 +5,15 @@
 *            (c) 2023 Alexander Hering             *
 ****************************************************
 """
+import os
 from sqlalchemy import Column, String, Boolean, Integer, JSON, Text, DateTime, CHAR, ForeignKey, func, select
 from sqlalchemy.ext.automap import automap_base
 from typing import Any, List, Tuple, Optional
 import datetime
 from src.configuration import configuration as cfg
 from src.utility.bronze import sqlalchemy_utility
+from src.utility.gold.basic_sqlalchemy_interface import BasicSQLAlchemyInterface
+from src.model.scraping_control.archiving.archiver_data_model import populate_data_instrastructure
 # from src.control.plugin_controller import PluginController
 
 
@@ -18,287 +21,33 @@ from src.utility.bronze import sqlalchemy_utility
 # TODO: Implement architecture and block extraction for website analyzation purposes
 # TODO: Implement plugin support
 
-class WebsiteDatabase(object):
+class WebsiteDatabase(BasicSQLAlchemyInterface):
     """
     Class, representing website database.
     """
 
-    def __init__(self, database_uri: str = None, schema: str = "", verbose: bool = False) -> None:
+    def __init__(self, database_uri: str = None, schema: str = None, verbose: bool = False) -> None:
         """
         Initiation method.
         :param database_uri: Database URI.
             Defaults to None in which case the central WEBSITE_ARCHIVER_DB ENV variable is used.
         :param schema: Schema to use.
-            Defaults to empty string in which case no schema is used.
+            Defaults to None in which case no schema is used.
         :param verbose: Verbose flag for interaction methods.
             Defaults to False since archiver is already logging.
         """
-        self._logger = cfg.LOGGER
+        working_directory = os.path.join(
+            cfg.PATHS.DATA_PATH, "archiving", "schema" if schema else "website_database")
+        if not schema.endswith("."):
+            schema += "."
+        super().__init__(working_directory=working_directory,
+                         database_uri=database_uri, population_function=populate_data_instrastructure,
+                         schema=schema, logger=cfg.LOGGER)
         self.verbose = verbose
-        self._logger.info("Automapping existing structures")
-        self.base = automap_base()
-        self.engine = sqlalchemy_utility.get_engine(
-            cfg.ENV["WEBSITE_ARCHIVER_DB"] if database_uri is None else database_uri)
         self.base.prepare(autoload_with=self.engine, reflect=True)
         self._logger.info("base created with")
         self._logger.info(f"Classes: {self.base.classes.keys()}")
         self._logger.info(f"Tables: {self.base.metadata.tables.keys()}")
-
-        self.model = None
-        self.session_factory = None
-        self.schema = schema
-        if self.schema and not self.schema.endswith("."):
-            self.schema += "."
-        self._initiate_infrastructure()
-
-    """
-    Basic setup
-    """
-
-    def _initiate_infrastructure(self) -> None:
-        """
-        Metthod for generating archiving tables.
-        """
-        self._logger.info(
-            f"Generating archiving tables for website with schema {self.schema}")
-        self.schema = str(self.schema)
-
-        class Run(self.base):
-            """
-            Page dataclass, representing a scraping run of a website.
-            """
-            __tablename__ = f"{self.schema}runs"
-            __table_args__ = {
-                "comment": "Website Run Table.", "extend_existing": True}
-
-            run_id = Column(Integer, primary_key=True, autoincrement=True, unique=True, nullable=False,
-                            comment="ID of the run.")
-            profile = Column(JSON, nullable=True,
-                             comment="Profile of run.")
-
-            started = Column(DateTime, default=func.now(),
-                             comment="Starting timestamp.")
-            updated = Column(DateTime, onupdate=func.now(),
-                             comment="Timestamp of last update.")
-            finished = Column(DateTime, nullable=True,
-                              comment="Finishing timestamp.")
-
-        class Page(self.base):
-            """
-            Page dataclass, representing a page of a website.
-            """
-            __tablename__ = f"{self.schema}pages"
-            __table_args__ = {
-                "comment": "Website Page Table.", "extend_existing": True}
-
-            page_id = Column(Integer, primary_key=True, autoincrement=True, unique=True, nullable=False,
-                             comment="ID of the page.")
-            page_url = Column(Text, nullable=False, unique=True,
-                              comment="URL of page.")
-
-            created = Column(DateTime, default=func.now(),
-                             comment="Timestamp of creation.")
-            updated = Column(DateTime, onupdate=func.now(),
-                             comment="Timestamp of last update.")
-            inactive = Column(CHAR, default="",
-                              comment="Flag for marking inactive entries.")
-
-        class Asset(self.base):
-            """
-            Page dataclass, representing an asset of a website.
-            """
-            __tablename__ = f"{self.schema}assets"
-            __table_args__ = {
-                "comment": "Website Asset Table.", "extend_existing": True}
-
-            asset_id = Column(Integer, primary_key=True, autoincrement=True, unique=True, nullable=False,
-                              comment="ID of the asset.")
-            asset_type = Column(String, nullable=False,
-                                comment="Type of the asset.")
-            asset_url = Column(Text, nullable=False, unique=True,
-                               comment="URL of Asset.")
-
-            created = Column(DateTime, default=func.now(),
-                             comment="Timestamp of creation.")
-            updated = Column(DateTime, onupdate=func.now(),
-                             comment="Timestamp of last update.")
-            inactive = Column(CHAR, default="",
-                              comment="Flag for marking inactive entries.")
-
-        class PageLink(self.base):
-            """
-            Page dataclass, representing the page network of a website.
-            """
-            __tablename__ = f"{self.schema}page_network"
-            __table_args__ = {
-                "comment": "Website Page Network Table.", "extend_existing": True}
-
-            link_id = Column(Integer, primary_key=True, autoincrement=True, unique=True, nullable=False,
-                             comment="ID of a network link.")
-            source_page_url = Column(Text, ForeignKey(f"{self.schema}pages.page_url"), nullable=False,
-                                     comment="Source page URL of the network link.")
-            target_page_url = Column(Text, ForeignKey(f"{self.schema}pages.page_url"), nullable=False,
-                                     comment="Target page URL of the network link.")
-
-            followed = Column(Boolean, nullable=False, default=False,
-                              comment="Flag declaring whether page link was followed.")
-            created = Column(DateTime, default=func.now(),
-                             comment="Timestamp of creation.")
-            updated = Column(DateTime, onupdate=func.now(),
-                             comment="Timestamp of last update.")
-            inactive = Column(CHAR, default="",
-                              comment="Flag for marking inactive entries.")
-
-        class ExternalPageLink(self.base):
-            """
-            Page dataclass, representing the external page network of a website.
-            """
-            __tablename__ = f"{self.schema}external_page_network"
-            __table_args__ = {
-                "comment": "Website External Page Network Table.", "extend_existing": True}
-
-            link_id = Column(Integer, primary_key=True, autoincrement=True, unique=True, nullable=False,
-                             comment="ID of a network link.")
-            source_page_url = Column(Text, ForeignKey(f"{self.schema}pages.page_url"), nullable=False,
-                                     comment="Source page URL of the network link.")
-            target_page_url = Column(Text, nullable=False,
-                                     comment="Target page URL.")
-
-            created = Column(DateTime, default=func.now(),
-                             comment="Timestamp of creation.")
-            updated = Column(DateTime, onupdate=func.now(),
-                             comment="Timestamp of last update.")
-            inactive = Column(CHAR, default="",
-                              comment="Flag for marking inactive entries.")
-
-        class AssetLink(self.base):
-            """
-            Page dataclass, representing the asset network of a website.
-            """
-            __tablename__ = f"{self.schema}asset_network"
-            __table_args__ = {
-                "comment": "Website Asset Network Table.", "extend_existing": True}
-
-            link_id = Column(Integer, primary_key=True, autoincrement=True, unique=True, nullable=False,
-                             comment="ID of a network link.")
-            source_page_url = Column(Text, ForeignKey(f"{self.schema}pages.page_url"), nullable=False,
-                                     comment="Source page URL of the network link.")
-            target_asset_url = Column(Text, ForeignKey(f"{self.schema}assets.asset_url"), nullable=False,
-                                      comment="Target asset URL of the network link.")
-
-            created = Column(DateTime, default=func.now(),
-                             comment="Timestamp of creation.")
-            updated = Column(DateTime, onupdate=func.now(),
-                             comment="Timestamp of last update.")
-            inactive = Column(CHAR, default="",
-                              comment="Flag for marking inactive entries.")
-
-        class Block(self.base):
-            """
-            Page dataclass, representing a block of a website.
-            """
-            __tablename__ = f"{self.schema}blocks"
-            __table_args__ = {
-                "comment": "Website Block Table.", "extend_existing": True}
-
-            block_id = Column(Integer, primary_key=True, autoincrement=True, unique=True, nullable=False,
-                              comment="ID of a network link.")
-            element_count = Column(Integer, nullable=True,
-                                   comment="Element count of a website block.")
-            link_count = Column(Integer, nullable=True,
-                                comment="Link count of a website block.")
-
-            created = Column(DateTime, default=func.now(),
-                             comment="Timestamp of creation.")
-            updated = Column(DateTime, onupdate=func.now(),
-                             comment="Timestamp of last update.")
-            inactive = Column(CHAR, default="",
-                              comment="Flag for marking inactive entries.")
-
-        class Architecture(self.base):
-            """
-            Page dataclass, representing an architecture instance of a website.
-            """
-            __tablename__ = f"{self.schema}architecture"
-            __table_args__ = {
-                "comment": "Website Architecture Table.", "extend_existing": True}
-
-            instance_id = Column(Integer, primary_key=True, autoincrement=True, unique=True, nullable=False,
-                                 comment="ID of an architecture instance.")
-            page_id = Column(Integer, ForeignKey(f"{self.schema}pages.page_id"), nullable=False,
-                             comment="Page ID of the architecture instance.")
-            block_id = Column(Integer, ForeignKey(f"{self.schema}blocks.block_id"), nullable=False,
-                              comment="Block ID of the architecture instance.")
-            start_element = Column(Integer, nullable=True,
-                                   comment="Start element of the block.")
-
-            created = Column(DateTime, default=func.now(),
-                             comment="Timestamp of creation.")
-            updated = Column(DateTime, onupdate=func.now(),
-                             comment="Timestamp of last update.")
-            inactive = Column(CHAR, default="",
-                              comment="Flag for marking inactive entries.")
-
-        class RawPage(self.base):
-            """
-            Page dataclass, representing a raw page of a website.
-            """
-            __tablename__ = f"{self.schema}raw_pages"
-            __table_args__ = {
-                "comment": "Website Raw Page Table.", "extend_existing": True}
-
-            instance_id = Column(Integer, primary_key=True, autoincrement=True, unique=True, nullable=False,
-                                 comment="ID of a raw page instance.")
-            page_id = Column(Integer, ForeignKey(f"{self.schema}pages.page_id"), nullable=False,
-                             comment="Page ID of the instance.")
-            raw = Column(Text, nullable=True,
-                         comment="Raw content of the page.")
-            path = Column(Text, nullable=True,
-                          comment="Path to the current offline copy of the page.")
-
-            created = Column(DateTime, default=func.now(),
-                             comment="Timestamp of creation.")
-            updated = Column(DateTime, onupdate=func.now(),
-                             comment="Timestamp of last update.")
-            inactive = Column(CHAR, default="",
-                              comment="Flag for marking inactive entries.")
-
-        class RawAsset(self.base):
-            """
-            Page dataclass, representing a raw asset of a website.
-            """
-            __tablename__ = f"{self.schema}raw_assets"
-            __table_args__ = {
-                "comment": "Website Raw Asset Table.", "extend_existing": True}
-
-            instance_id = Column(Integer, primary_key=True, autoincrement=True, unique=True, nullable=False,
-                                 comment="ID of a raw asset instance.")
-            asset_id = Column(Integer, ForeignKey(f"{self.schema}assets.asset_id"), nullable=False,
-                              comment="Asset ID of the instance.")
-            raw = Column(Text, nullable=True,
-                         comment="Raw content of the asset.")
-            encoding = Column(String, nullable=True,
-                              comment="Target encoding of the asset.")
-            extension = Column(String, nullable=True,
-                               comment="Target extension of the asset.")
-            path = Column(Text, nullable=True,
-                          comment="Path to the current offline copy of the asset.")
-
-            created = Column(DateTime, default=func.now(),
-                             comment="Timestamp of creation.")
-            updated = Column(DateTime, onupdate=func.now(),
-                             comment="Timestamp of last update.")
-            inactive = Column(CHAR, default="",
-                              comment="Flag for marking inactive entries.")
-
-        for dataclass in [Run, Page, Asset, PageLink, ExternalPageLink, AssetLink, Block, Architecture, RawPage, RawAsset]:
-            self.model[dataclass.__tablename__] = dataclass
-        if self.verbose:
-            self._logger.info(f"self.model after addition: {self.model}")
-        self._logger.info("Creating new structures")
-        self.base.metadata.create_all(bind=self.engine)
-        self.session_factory = sqlalchemy_utility.get_session_factory(
-                    self.engine)
 
     """
     Interfacing methods
