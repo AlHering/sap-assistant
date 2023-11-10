@@ -7,7 +7,8 @@
 """
 import copy
 from enum import Enum
-from sqlalchemy import Column, String, Boolean, Integer, JSON, Text, DateTime, CHAR, ForeignKey, Table, Float, BLOB, Uuid, func
+from sqlalchemy import Column, String, Boolean, Integer, JSON, Text, DateTime, CHAR, ForeignKey, Table, Float, BLOB, Uuid
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session, relationship
 from sqlalchemy import and_, or_, not_, select
 from sqlalchemy import create_engine
@@ -212,3 +213,42 @@ def create_mapping_from_dictionary(mapping_base: Any, entity_type: str, column_d
                     profile: relationship(source_class, back_populates=profile)
                 })
     return type(entity_type[0].upper()+entity_type[1:], (mapping_base,), class_data)
+
+
+def migrate(source_uri: str, target_uri: str, source_tables: List[str], target_tables: List[str], column_translation: dict = None) -> None:
+    """
+    Function for migrating database contents.
+    :param source_uri: URI of source DB.
+    :param target_uri: URI of target DB.
+    :param source_tables: List of source tables to migrate.
+    :param target_tables:  List of target tables, corresponding to source tables.
+    :param column_translation: Dictionary, containing a translation from source columns to target columns in a nested dictionary under the
+        source table as key. Defaults to None. If no translation is given, the name of the source column is taken as target column.
+        Example for a translation dictionary: {"my_source_table": {"my_source_column_a": "target_column_a"}}.
+    """
+    if column_translation is None:
+        column_translation = {}
+    source_base = automap_base()
+    source_engine = get_engine(source_uri)
+    source_base.prepare(autoload_with=source_engine)
+    source_metadata_tables = source_base.metadata.tables
+    source_classes = get_classes_from_base(source_base)
+    source_sf = get_session_factory(source_engine)
+
+    target_base = automap_base()
+    target_engine = get_engine(target_uri)
+    target_base.prepare(autoload_with=target_engine)
+    target_classes = get_classes_from_base(target_base)
+    target_sf = get_session_factory(target_engine)
+
+    for table_index, table in enumerate(source_tables):
+        for source_object in source_sf().query(source_classes[table]).all():
+            data = {}
+            for column in source_metadata_tables[table].columns:
+                column = column.name
+                data[column_translation.get(table, {}).get(column, column)] = getattr(
+                    source_object, column)
+            print(data)
+            with target_sf() as session:
+                session.add(target_classes[target_tables[table_index]](**data))
+                session.commit()
