@@ -5,7 +5,7 @@
 *            (c) 2023 Alexander Hering             *
 ****************************************************
 """
-from time import sleep
+from types import List
 from multiprocessing import Process
 from src.configuration import configuration as cfg
 from src.model.scraping_control.archiving.requests_website_archiver import RequestsWebsiteArchiver
@@ -13,7 +13,7 @@ from src.utility.bronze import json_utility, sqlalchemy_utility
 from src.utility.silver import file_system_utility
 
 
-def print_fk_info(tables):
+def print_fk_info(tables: List[sqlalchemy_utility.Table]) -> None:
     for table in tables:
         print(f"\n\n{table}")
         for column in tables[table].columns:
@@ -24,27 +24,28 @@ def print_fk_info(tables):
             print(f"FK target fullname: {foreign_key.target_fullname}")
 
 
-def run_migration(su, tu, st, tt):
+def run_migration(source_db_uri: str, target_db_uri: str, source_tables: List[str], target_tables: List[str]) -> None:
     print("Running migration")
-    sqlalchemy_utility.migrate(su, tu, st, tt)
+    sqlalchemy_utility.migrate(
+        source_db_uri, target_db_uri, source_tables, target_tables)
 
 
-def run_parallel_migration(profiles):
+def run_parallel_migration(profiles: List[str]) -> None:
     processes = []
     for profile_name in profiles:
         profile = json_utility.load(
             f"{cfg.PATHS.DATA_PATH}/processes/profiles/{profile_name}.json")
-        su = f"sqlite:///{cfg.PATHS.DATA_PATH}/processes/backups/{profile_name}.db"
-        tu = f"sqlite:///{cfg.PATHS.DATA_PATH}/processes/{profile_name}.db"
-        profile["database_uri"] = su
+        source_db_uri = f"sqlite:///{cfg.PATHS.DATA_PATH}/processes/backups/{profile_name}.db"
+        target_db_uri = f"sqlite:///{cfg.PATHS.DATA_PATH}/processes/{profile_name}.db"
+        profile["database_uri"] = source_db_uri
         archiver = RequestsWebsiteArchiver(profile)
         db = archiver.database
         tables = db.base.metadata.tables
-        st = [t for t in tables if t.startswith("1.")]
-        tt = [t for t in tables if t.startswith(
+        source_tables = [t for t in tables if t.startswith("1.")]
+        target_tables = [t for t in tables if t.startswith(
             file_system_utility.clean_directory_name(profile["base_url"]))]
         processes.append(Process(target=run_migration,
-                         args=(su, tu, st, tt,)))
+                         args=(source_db_uri, target_db_uri, source_tables, target_tables,)))
         processes[-1].start()
     try:
         for process in processes:
