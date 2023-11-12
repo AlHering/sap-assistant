@@ -23,6 +23,14 @@ def run_archiver(profile: dict, wait: float = .0) -> None:
     archiver.archive_website()
 
 
+def create_databases(profile: dict) -> None:
+    """
+    Function for creating profile-based archiver infrastructure.
+    :param profile: Archiver profile.
+    """
+    _ = RequestsWebsiteArchiver(profile)
+
+
 if __name__ == "__main__":
     processes = []
     counter = .0
