@@ -14,6 +14,10 @@ from src.utility.silver import file_system_utility
 
 
 def print_fk_info(tables: List[sqlalchemy_utility.Table]) -> None:
+    """
+    Function for printing foreign key information for tables.
+    :param tables: List of table objects.
+    """
     for table in tables:
         print(f"\n\n{table}")
         for column in tables[table].columns:
@@ -25,12 +29,23 @@ def print_fk_info(tables: List[sqlalchemy_utility.Table]) -> None:
 
 
 def run_migration(source_db_uri: str, target_db_uri: str, source_tables: List[str], target_tables: List[str]) -> None:
+    """
+    Function for running migration.
+    :param source_db_uri: Source database URI.
+    :param target_db_uri: Target database URI.
+    :param source_tables: Source tables.
+    :param target_tables: Target tables.
+    """
     print("Running migration")
     sqlalchemy_utility.migrate(
         source_db_uri, target_db_uri, source_tables, target_tables)
 
 
 def run_parallel_migration(profiles: List[str]) -> None:
+    """
+    Function for running multiple migrations in parallel.
+    :param profiles: List of profile names.
+    """
     processes = []
     for profile_name in profiles:
         profile = json_utility.load(
