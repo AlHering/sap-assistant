@@ -23,8 +23,9 @@ def print_fk_info(tables):
             print(f"FK target fullname: {foreign_key.target_fullname}")
 
 
-def run_migration(database_uri, st, tt):
-    sqlalchemy_utility.migrate(database_uri, database_uri, st, tt)
+def run_migration(su, tu, st, tt):
+    print("Running migration")
+    sqlalchemy_utility.migrate(su, tu, st, tt)
 
 
 if __name__ == "__main__":
@@ -33,11 +34,12 @@ if __name__ == "__main__":
     profile = json_utility.load(
         f"{cfg.PATHS.DATA_PATH}/processes/profiles/{profile_name}.json")
     database_uri = f"sqlite:///{cfg.PATHS.DATA_PATH}/processes/{profile_name}.db"
-    profile["database_uri"] = database_uri
+    profile["database_uri"] = f"sqlite:///{cfg.PATHS.DATA_PATH}/processes/backups/{profile_name}.db"
     archiver = RequestsWebsiteArchiver(profile)
     db = archiver.database
     source_classes = sqlalchemy_utility.get_classes_from_base(db.base)
     tables = db.base.metadata.tables
     st = [t for t in tables if t.startswith("1.")]
     tt = [t for t in tables if t.startswith("https-__www-se80-co-uk_.")]
-    run_migration(database_uri, st, tt)
+    run_migration(
+        f"sqlite:///{cfg.PATHS.DATA_PATH}/processes/backups/{profile_name}.db", database_uri, st, tt)
