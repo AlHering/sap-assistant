@@ -80,10 +80,12 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
         """
         Method for creating state dump of archiver.
         :param reason: Reason for state dump.
+        :param final: Flag declaring, whether process is finished.
         """
         self.cache["failed"] = self.failed
         self.cache["reason"] = reason
-        self.save_state(["session"])
+        self.save_state(["session"], finished=isinstance(
+            reason, str) and reason == "archiving_finished")
 
     def load_state_dump(self, path: str) -> None:
         """
