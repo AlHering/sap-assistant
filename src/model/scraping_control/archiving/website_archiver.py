@@ -82,13 +82,15 @@ class WebsiteArchiver(ABC):
             self.profile, self.reload_last_state)
         self.load_state()
 
-    def save_state(self, ignored: List[str]) -> None:
+    def save_state(self, ignored: List[str], finished: bool = False) -> None:
         """
         Method for saving the current state of the archiving process.
         :param ignored: Ignored cache fields.
+        :param finished: Flag, declaring whether process is finished.
+            Defaults to False.
         """
         self.database.update_cache(
-            {key: self.cache[key] for key in self.cache if key not in ignored})
+            {key: self.cache[key] for key in self.cache if key not in ignored}, finished=finished)
 
     def load_state(self) -> None:
         """
