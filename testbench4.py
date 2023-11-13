@@ -84,22 +84,32 @@ def migrate_runs_to_db(profiles: List[str]) -> None:
         dump_folder = profile.get("dump_path", os.path.join(
             cfg.PATHS.DUMP_PATH, "website_archiver", file_system_utility.clean_directory_name(profile["base_url"])))
         dumped_caches = []
-        archiver = RequestsWebsiteArchiver(profile)
-        latest_path = os.path.join(dump_folder, "latest.json")
-        if os.path.exists(latest_path):
-            dumped_caches.append(latest_path)
-        else:
-            for root, _, files in os.walk(dump_folder, topdown=True):
+        archiver = RequestsWebsiteArchiver(profile, reload_last_state=False)
+
+        found_finished = False
+        for root, _, files in os.walk(dump_folder, topdown=True):
+            for f in files:
+                if "_FINISHED" in f:
+                    dumped_caches = [os.path.join(root, f)]
+                    found_finished = True
+            if not found_finished:
                 dumped_caches = [
                     os.path.join(root, file) for file in files if file.startswith("MILESTONE")]
-                break
+            break
         if dumped_caches:
             dump = json_utility.load(dumped_caches[-1])
-            archiver.cache = dump
-            archiver.save_state(["session"])
+            cache = {
+                key: dump["_cache"][key] for key in dump["_cache"]
+            }
+            for key in ["failed", "reason"]:
+                cache[key] = dump[key]
+            archiver.cache = cache
+            archiver.save_state(["session"], finished=isinstance(
+                dump["reason"], str) and dump["reason"] == "archiving_finished")
 
 
 if __name__ == "__main__":
     profiles = ["tcodesearch_com", "sapdatasheet_org",
                 "sap4tech_net", "erpgreat_com", "erp-up_de"]
+    # profiles = ["se80_co_uk"]
     migrate_runs_to_db(profiles)
