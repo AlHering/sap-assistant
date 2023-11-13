@@ -34,22 +34,22 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
         :param reload_last_state: Flag declaring whether to reload last state from cache dumps.
         """
         super().__init__(profile=profile, reload_last_state=reload_last_state)
-        self._cache["session"] = requests.Session()
+        self.cache["session"] = requests.Session()
         if isinstance(self.proxies, dict):
-            self._cache["session"].proxies.update(self.proxies)
+            self.cache["session"].proxies.update(self.proxies)
         elif isinstance(self.proxies, str) and self.proxies == "torsocks":
-            self._cache["session"].proxies = {
+            self.cache["session"].proxies = {
                 "http": "socks5://127.0.0.1:9050",
                 "https": "socks5://127.0.0.1:9050"
             }
-        self._cache["milestones"] = self.profile.get("milestones", 300)
-        self._cache["last_milestone"] = self._cache.get("last_milestone", 0)
-        self._cache["last_url"] = self._cache.get("last_url")
-        self._cache["current_url"] = self._cache.get("current_url")
-        self._cache["current_index"] = self._cache.get("current_index", 0)
-        self._cache["reconnect_interval"] = self.profile.get(
+        self.cache["milestones"] = self.profile.get("milestones", 300)
+        self.cache["last_milestone"] = self.cache.get("last_milestone", 0)
+        self.cache["last_url"] = self.cache.get("last_url")
+        self.cache["current_url"] = self.cache.get("current_url")
+        self.cache["current_index"] = self.cache.get("current_index", 0)
+        self.cache["reconnect_interval"] = self.profile.get(
             "reconnect_interval", 60)
-        self._cache["reconnect_retries"] = self.profile.get(
+        self.cache["reconnect_retries"] = self.profile.get(
             "reconnect_retries", 3600)
 
     def archive_website(self) -> None:
@@ -57,19 +57,19 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
         Method for archiving website.
         """
         try:
-            next_url = self.get_next_url(self._cache["current_url"])
+            next_url = self.get_next_url(self.cache["current_url"])
             while next_url is not None:
-                if self._cache["current_index"] % self._cache["milestones"] == 0 and self._cache["current_index"] != 0:
+                if self.cache["current_index"] % self.cache["milestones"] == 0 and self.cache["current_index"] != 0:
                     latest_path = os.path.join(self.dump_folder, "latest.json")
                     if os.path.exists(latest_path):
                         os.rename(latest_path, os.path.join(
-                            self.dump_folder, f"MILESTONE_{self._cache['last_milestone']}.json"))
-                    self._cache["last_milestone"] = self._cache["current_index"]
+                            self.dump_folder, f"MILESTONE_{self.cache['last_milestone']}.json"))
+                    self.cache["last_milestone"] = self.cache["current_index"]
                     self.create_state_dump(
                         reason="archiving_milestone")
                 self._handle_next_page(next_url)
-                self._cache["last_url"] = self._cache["current_url"]
-                next_url = self.get_next_url(self._cache["current_url"])
+                self.cache["last_url"] = self.cache["current_url"]
+                next_url = self.get_next_url(self.cache["current_url"])
         except Exception as ex:
             self.create_state_dump(
                 reason={
@@ -80,7 +80,7 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
             )
             raise ex
         self.create_state_dump(reason="archiving_finished",
-                               file_name=f"MILESTONE_{self._cache['current_index']}_FINISHED.json")
+                               file_name=f"MILESTONE_{self.cache['current_index']}_FINISHED.json")
 
     def create_state_dump(self, reason: Optional[Any] = None, file_name: str = "latest.json") -> None:
         """
@@ -90,7 +90,7 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
         """
         json_utility.save(
             {
-                "_cache": {key: self._cache[key] for key in self._cache if key != "session"},
+                "cache": {key: self.cache[key] for key in self.cache if key != "session"},
                 "failed": list(self.failed),
                 "reason": reason
             },
@@ -106,7 +106,7 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
         :param path: Arbitrary arguments.
         """
         dump_data = json_utility.load(path)
-        self._cache.update(dump_data["_cache"])
+        self.cache.update(dump_data["cache"])
         self.failed = set(dump_data.get("failed", []))
 
     def _retry_with_new_identity(self) -> requests.Response:
@@ -119,18 +119,18 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
             f"[{self.profile['base_url']}] Status invalid, retrying with different user-agent and proxy setting '{self.proxies}' ...")
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36"}
-        response = self._cache["session"].get(
-            self._cache["current_url"], headers=headers)
+        response = self.cache["session"].get(
+            self.cache["current_url"], headers=headers)
         self.logger.info(
             f"[{self.profile['base_url']}] User-agent change resulted in status '{response.status_code}' ...")
         if response is None or response.status_code != 200:
             if isinstance(self.proxies, str):
                 if self.proxies == "random":
-                    self._cache["session"].proxies = internet_utility.get_proxy(
+                    self.cache["session"].proxies = internet_utility.get_proxy(
                         source="package")
-                    return self._cache["session"].get(self._cache["current_url"], headers=headers)
+                    return self.cache["session"].get(self.cache["current_url"], headers=headers)
 
-        return response if (response is not None and response.status_code != 200) else self._cache["session"].get(self._cache["current_url"], headers={"User-agent": internet_utility.get_user_agent()})
+        return response if (response is not None and response.status_code != 200) else self.cache["session"].get(self.cache["current_url"], headers={"User-agent": internet_utility.get_user_agent()})
 
     def _request_page(self) -> Optional[requests.Response]:
         """
@@ -139,8 +139,8 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
         response = None
         try:
             self.logger.info(
-                f"[{self.profile['base_url']}] Fetching {self._cache['current_url']} ({self._cache['current_index']})")
-            response = self._cache["session"].get(self._cache["current_url"])
+                f"[{self.profile['base_url']}] Fetching {self.cache['current_url']} ({self.cache['current_index']})")
+            response = self.cache["session"].get(self.cache["current_url"])
             if response.status_code != 200:
                 response = self._retry_with_new_identity()
         except MaxRetryError:
@@ -150,18 +150,18 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
         except SSLError:
             self.logger.warning(
                 f"[{self.profile['base_url']}] SSL error appeared! Passing verification.")
-            response = self._cache["session"].get(
-                self._cache["current_url"], verify=False)
+            response = self.cache["session"].get(
+                self.cache["current_url"], verify=False)
         except requests.exceptions.MissingSchema:
             self.logger.warning(
                 f"[{self.profile['base_url']}] Missing schema! Trying to fix URL.")
-            self._cache["current_url"] = self.fix_link(
-                self._cache["last_url"], self._cache["current_url"])
-            response = self._cache["session"].get(self._cache["current_url"])
+            self.cache["current_url"] = self.fix_link(
+                self.cache["last_url"], self.cache["current_url"])
+            response = self.cache["session"].get(self.cache["current_url"])
         except requests.exceptions.TooManyRedirects:
-            self.failed.add(self._cache["current_url"])
+            self.failed.add(self.cache["current_url"])
             self.logger.info(
-                f"[{self.profile['base_url']}] '{self._cache['current_url']}' exceeded limit of redirects, ignoring ...")
+                f"[{self.profile['base_url']}] '{self.cache['current_url']}' exceeded limit of redirects, ignoring ...")
         except requests .exceptions.ConnectionError as ex:
             self.create_state_dump(
                 reason={
@@ -175,18 +175,18 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
                 f"[{self.profile['base_url']}] Connection error appeared! State dump created.")
             if not internet_utility.check_connection():
                 tries = 0
-                while not internet_utility.check_connection() and self._cache["reconnect_retries"] < tries:
+                while not internet_utility.check_connection() and self.cache["reconnect_retries"] < tries:
                     self.logger.warning(
                         f"[{self.profile['base_url']}] No internet connection! Retrying in 10 seconds ...")
-                    time.sleep(self._cache["reconnect_interval"])
+                    time.sleep(self.cache["reconnect_interval"])
                     tries += 1
                 self.logger.info(
                     f"[{self.profile['base_url']}] Regained internet connection, retrying ...")
-                return self._handle_next_page(self._cache["current_url"])
+                return self._handle_next_page(self.cache["current_url"])
             else:
-                self.failed.add(self._cache["current_url"])
+                self.failed.add(self.cache["current_url"])
                 self.logger.info(
-                    f"[{self.profile['base_url']}] '{self._cache['current_url']}' not reachable, ignoring ...")
+                    f"[{self.profile['base_url']}] '{self.cache['current_url']}' not reachable, ignoring ...")
         return response
 
     def _handle_next_page(self, next_url: str) -> None:
@@ -194,13 +194,13 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
         Internal method to handle next page.
         :param next_url: Next page URL.
         """
-        self._cache["current_url"] = next_url
+        self.cache["current_url"] = next_url
         response = self._request_page()
         if response is not None and response.status_code == 200:
             # Processing response
             self.logger.info(
                 f"[{self.profile['base_url']}] Status: {response.status_code}")
-            self.register_page(self._cache["current_url"], response.content)
+            self.register_page(self.cache["current_url"], response.content)
 
             html_content = html.fromstring(
                 response.content if response.content else "<!DOCTYPE html><html>")
@@ -217,11 +217,11 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
                 target_pages.remove(page_link)
 
             for link in target_assets:
-                self.register_link(self._cache["current_url"], link, "asset")
+                self.register_link(self.cache["current_url"], link, "asset")
                 try:
                     asset_data = self.get_asset_data(link)
                     self.register_asset(
-                        self._cache["current_url"], link, *asset_data)
+                        self.cache["current_url"], link, *asset_data)
                 except requests.exceptions.MissingSchema:
                     self.logger.info(
                         f"[{self.profile['base_url']}] Schema exception appeared for '{link}'")
@@ -235,11 +235,11 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
                 link_netloc = urlparse(link).netloc
                 if any(base in link_netloc for base in self.allowed_bases):
                     newly_created = self.register_link(
-                        self._cache["current_url"], link, "page")
+                        self.cache["current_url"], link, "page")
                     if not newly_created:
                         discarded += 1
                 else:
                     discarded_external += 1
             self.logger.info(
                 f"[{self.profile['base_url']}] Discarded {discarded} internal and {discarded_external} external page links.")
-            self._cache["current_index"] += 1
+            self.cache["current_index"] += 1
