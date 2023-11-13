@@ -12,7 +12,7 @@ from typing import Any, List, Tuple, Optional
 import datetime
 from src.configuration import configuration as cfg
 from src.utility.bronze import sqlalchemy_utility
-from src.utility.gold.basic_sqlalchemy_interface import BasicSQLAlchemyInterface
+from src.utility.gold.basic_sqlalchemy_interface import BasicSQLAlchemyInterface, FilterMask
 from src.model.scraping_control.archiving.archiver_data_model import populate_data_instrastructure
 # from src.control.plugin_controller import PluginController
 
@@ -38,6 +38,7 @@ class WebsiteDatabase(BasicSQLAlchemyInterface):
         """
         working_directory = os.path.join(
             cfg.PATHS.DATA_PATH, "archiving", "schema" if schema else "website_database")
+        self.run = None
         if not schema.endswith("."):
             schema += "."
         super().__init__(working_directory=working_directory,
@@ -52,6 +53,21 @@ class WebsiteDatabase(BasicSQLAlchemyInterface):
     """
     Interfacing methods
     """
+
+    def set_run(self, profile: dict, reload: bool) -> dict:
+        """
+        Method for setting run.
+        :param profile: Profile for the current run.
+        :param reload: Flag for declaring whether to reload last unfinished run.
+        """
+        last_run = self.get_objects_by_filtermasks(
+            f"{self.schema}runs", [FilterMask([["profile", "==", profile]])])[-1]
+        if last_run.finished is None and reload:
+            self.run = last_run
+        else:
+            run_id = self.post_object(
+                f"{self.schema}runs", profile=profile, cache={})
+            self.run = self.get_object_by_id(f"{self.schema}runs", run_id)
 
     def register_page(self, page_url: str, page_content: str = None,
                       page_path: str = None) -> None:
