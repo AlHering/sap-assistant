@@ -5,7 +5,8 @@
 *            (c) 2023 Alexander Hering             *
 ****************************************************
 """
-from types import List
+import os
+from typing import List
 from multiprocessing import Process
 from src.configuration import configuration as cfg
 from src.model.scraping_control.archiving.requests_website_archiver import RequestsWebsiteArchiver
@@ -70,7 +71,35 @@ def run_parallel_migration(profiles: List[str]) -> None:
             process.kill()
 
 
+def migrate_runs_to_db(profiles: List[str]) -> None:
+    """
+    Function for migrating runs to DB.
+    :param profiles: List of profile names.
+    """
+    for profile_name in profiles:
+        profile = json_utility.load(
+            f"{cfg.PATHS.DATA_PATH}/processes/profiles/{profile_name}.json")
+        target_db_uri = f"sqlite:///{cfg.PATHS.DATA_PATH}/processes/{profile_name}.db"
+        profile["database_uri"] = target_db_uri
+        dump_folder = profile.get("dump_path", os.path.join(
+            cfg.PATHS.DUMP_PATH, "website_archiver", file_system_utility.clean_directory_name(profile["base_url"])))
+        dumped_caches = []
+        archiver = RequestsWebsiteArchiver(profile)
+        latest_path = os.path.join(dump_folder, "latest.json")
+        if os.path.exists(latest_path):
+            dumped_caches.append(latest_path)
+        else:
+            for root, _, files in os.walk(dump_folder, topdown=True):
+                dumped_caches = [
+                    os.path.join(root, file) for file in files if file.startswith("MILESTONE")]
+                break
+        if dumped_caches:
+            dump = json_utility.load(dumped_caches[-1])
+            archiver.cache = dump
+            archiver.save_state(["session"])
+
+
 if __name__ == "__main__":
     profiles = ["tcodesearch_com", "sapdatasheet_org",
                 "sap4tech_net", "erpgreat_com", "erp-up_de"]
-    run_parallel_migration(profiles)
+    migrate_runs_to_db(profiles)
