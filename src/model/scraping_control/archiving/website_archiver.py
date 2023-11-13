@@ -63,8 +63,8 @@ class WebsiteArchiver(ABC):
             self.base_url_base]
 
         # Handling data backend
-        self.database = WebsiteDatabase(profile.get(
-            "database_uri"), schema=file_system_utility.clean_directory_name(self.base_url))
+        self.database = WebsiteDatabase(
+            profile["database_uri"], schema=file_system_utility.clean_directory_name(self.base_url))
         self.media_handler = media_metadata.MediaMetadata()
         self.media_metadata = self.media_handler.media
         self.schemas = {}
