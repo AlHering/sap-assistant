@@ -60,10 +60,6 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
             next_url = self.get_next_url(self.cache["current_url"])
             while next_url is not None:
                 if self.cache["current_index"] % self.cache["milestones"] == 0 and self.cache["current_index"] != 0:
-                    latest_path = os.path.join(self.dump_folder, "latest.json")
-                    if os.path.exists(latest_path):
-                        os.rename(latest_path, os.path.join(
-                            self.dump_folder, f"MILESTONE_{self.cache['last_milestone']}.json"))
                     self.cache["last_milestone"] = self.cache["current_index"]
                     self.create_state_dump(
                         reason="archiving_milestone")
