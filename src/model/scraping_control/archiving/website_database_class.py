@@ -6,6 +6,7 @@
 ****************************************************
 """
 import os
+import copy
 from sqlalchemy import Column, String, Boolean, Integer, JSON, Text, DateTime, CHAR, ForeignKey, func, select
 from sqlalchemy.ext.automap import automap_base
 from typing import Any, List, Tuple, Optional
@@ -68,6 +69,20 @@ class WebsiteDatabase(BasicSQLAlchemyInterface):
             run_id = self.post_object(
                 f"{self.schema}runs", profile=profile, cache={})
             self.run = self.get_object_by_id(f"{self.schema}runs", run_id)
+
+    def get_cache(self) -> dict:
+        """
+        Method for getting the cache.
+        """
+        return self.run.cache
+
+    def update_cache(self, cache: dict) -> None:
+        """
+        Method for updating the cache.
+        :param cache: Cache update.
+        """
+        self.run.cache = copy.deepcopy(cache)
+        self.patch_object(f"{self.schema}runs", self.run.run_id, cache=cache)
 
     def register_page(self, page_url: str, page_content: str = None,
                       page_path: str = None) -> None:
