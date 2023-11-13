@@ -162,7 +162,7 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
                 tries = 0
                 while not internet_utility.check_connection() and self.cache["reconnect_retries"] < tries:
                     self.logger.warning(
-                        f"[{self.profile['base_url']}] No internet connection! Retrying in 10 seconds ...")
+                        f"[{self.profile['base_url']}] No internet connection! Retrying in {self.cache['reconnect_interval']} seconds ...")
                     time.sleep(self.cache["reconnect_interval"])
                     tries += 1
                 self.logger.info(
