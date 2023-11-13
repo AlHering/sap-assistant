@@ -81,19 +81,16 @@ class WebsiteArchiver(ABC):
         self.database.set_run(
             self.profile, self.reload_last_state)
 
-    def save_state(self, *args: Optional[Any], **kwargs: Optional[Any]) -> None:
+    def save_state(self, ignored: List[str]) -> None:
         """
         Method for saving the current state of the archiving process.
-        :param args: Arbitrary arguments.
-        :param kwargs: Arbitrary keyword arguments.
+        :param ignored: Ignored cache fields.
         """
         pass
 
-    def load_state(self, *args: Optional[Any], **kwargs: Optional[Any]) -> None:
+    def load_state(self) -> None:
         """
         Method for loading the current state of the archiving process.
-        :param args: Arbitrary arguments.
-        :param kwargs: Arbitrary keyword arguments.
         """
         pass
 
