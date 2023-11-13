@@ -76,13 +76,19 @@ class WebsiteDatabase(BasicSQLAlchemyInterface):
         """
         return {} if self.run.cache is None else copy.deepcopy(self.run.cache)
 
-    def update_cache(self, cache: dict) -> None:
+    def update_cache(self, cache: dict, finished: bool = False) -> None:
         """
         Method for updating the cache.
         :param cache: Cache update.
+        :param finished: Flag, declaring whether process is finished.
+            Defaults to False.
         """
         self.run.cache = copy.deepcopy(cache)
-        self.patch_object(f"{self.schema}runs", self.run.run_id, cache=cache)
+        kwargs = {"cache": cache}
+        if finished:
+            kwargs["finished"] = datetime.datetime.now()
+        self.patch_object(f"{self.schema}runs",
+                          self.run.run_id, **kwargs["finished"])
 
     def register_page(self, page_url: str, page_content: str = None,
                       page_path: str = None) -> None:
