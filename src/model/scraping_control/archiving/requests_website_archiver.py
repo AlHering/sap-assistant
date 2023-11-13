@@ -50,7 +50,7 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
         self.cache["reconnect_interval"] = self.profile.get(
             "reconnect_interval", 60)
         self.cache["reconnect_retries"] = self.profile.get(
-            "reconnect_retries", 3600)
+            "reconnect_retries", 60)
 
     def archive_website(self) -> None:
         """
