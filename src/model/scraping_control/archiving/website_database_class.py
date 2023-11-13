@@ -74,7 +74,7 @@ class WebsiteDatabase(BasicSQLAlchemyInterface):
         """
         Method for getting the cache.
         """
-        return self.run.cache
+        return copy.deepcopy(self.run.cache)
 
     def update_cache(self, cache: dict) -> None:
         """
