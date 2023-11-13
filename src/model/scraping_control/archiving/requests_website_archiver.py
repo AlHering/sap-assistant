@@ -75,39 +75,27 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
                 reason={
                     "exception": str(ex),
                     "traceback": traceback.format_exc(),
-                },
-                file_name="EXCEPTION.json"
+                }
             )
             raise ex
-        self.create_state_dump(reason="archiving_finished",
-                               file_name=f"MILESTONE_{self.cache['current_index']}_FINISHED.json")
+        self.create_state_dump(reason="archiving_finished")
 
-    def create_state_dump(self, reason: Optional[Any] = None, file_name: str = "latest.json") -> None:
+    def create_state_dump(self, reason: Optional[Any] = None) -> None:
         """
         Method for creating state dump of archiver.
         :param reason: Reason for state dump.
-        :param file_name: File name. Defaults to "latest.json".
         """
-        json_utility.save(
-            {
-                "cache": {key: self.cache[key] for key in self.cache if key != "session"},
-                "failed": list(self.failed),
-                "reason": reason
-            },
-            os.path.join(
-                self.dump_folder,
-                file_name
-            )
-        )
+        self.cache["failed"] = self.failed
+        self.cache["reason"] = reason
+        self.save_state(["session"])
 
     def load_state_dump(self, path: str) -> None:
         """
         Method for loading state dump of archiver.
         :param path: Arbitrary arguments.
         """
-        dump_data = json_utility.load(path)
-        self.cache.update(dump_data["cache"])
-        self.failed = set(dump_data.get("failed", []))
+        self.load_state()
+        self.failed = set(self.cache.get("failed", []))
 
     def _retry_with_new_identity(self) -> requests.Response:
         """
@@ -167,8 +155,7 @@ class RequestsWebsiteArchiver(WebsiteArchiver):
                 reason={
                     "exception": str(ex),
                     "traceback": traceback.format_exc()
-                },
-                file_name="EXCEPTION.json"
+                }
             )
             # TODO: Implement appropriate methods on super-class level
             self.logger.warning(
