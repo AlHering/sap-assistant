@@ -61,10 +61,10 @@ class WebsiteDatabase(BasicSQLAlchemyInterface):
         :param profile: Profile for the current run.
         :param reload: Flag for declaring whether to reload last unfinished run.
         """
-        last_run = self.get_objects_by_filtermasks(
-            f"{self.schema}runs", [FilterMask([["profile", "==", profile]])])[-1]
-        if last_run.finished is None and reload:
-            self.run = last_run
+        runs = self.get_objects_by_filtermasks(
+            f"{self.schema}runs", [FilterMask([["profile", "==", profile]])])
+        if runs and runs[-1].finished is None and reload:
+            self.run = runs[-1]
         else:
             run_id = self.post_object(
                 f"{self.schema}runs", profile=profile, cache={})
