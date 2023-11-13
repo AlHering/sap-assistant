@@ -87,7 +87,7 @@ class WebsiteDatabase(BasicSQLAlchemyInterface):
         if finished:
             kwargs["finished"] = datetime.datetime.now()
         self.patch_object(f"{self.schema}runs",
-                          self.run_id, **kwargs["finished"])
+                          self.run_id, **kwargs)
 
     def register_page(self, page_url: str, page_content: str = None,
                       page_path: str = None) -> None:
