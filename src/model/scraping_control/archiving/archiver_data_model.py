@@ -35,6 +35,8 @@ def populate_data_instrastructure(engine: Engine, schema: str, model: dict) -> N
                         comment="ID of the run.")
         profile = Column(JSON, nullable=True,
                          comment="Profile of run.")
+        cache = Column(JSON, nullable=True,
+                       comment="Cache of run.")
 
         started = Column(DateTime, default=func.now(),
                          comment="Starting timestamp.")
