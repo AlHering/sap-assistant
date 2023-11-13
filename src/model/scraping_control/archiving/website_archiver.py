@@ -81,15 +81,6 @@ class WebsiteArchiver(ABC):
         self.database.set_run(
             self.profile, self.reload_last_state)
 
-    @abstractmethod
-    def archive_website(self, *args: Optional[Any], **kwargs: Optional[Any]) -> None:
-        """
-        Abstract method for archiving website.
-        :param args: Arbitrary arguments.
-        :param kwargs: Arbitrary keyword arguments.
-        """
-        pass
-
     def save_state(self, *args: Optional[Any], **kwargs: Optional[Any]) -> None:
         """
         Method for saving the current state of the archiving process.
@@ -101,6 +92,15 @@ class WebsiteArchiver(ABC):
     def load_state(self, *args: Optional[Any], **kwargs: Optional[Any]) -> None:
         """
         Method for loading the current state of the archiving process.
+        :param args: Arbitrary arguments.
+        :param kwargs: Arbitrary keyword arguments.
+        """
+        pass
+
+    @abstractmethod
+    def archive_website(self, *args: Optional[Any], **kwargs: Optional[Any]) -> None:
+        """
+        Abstract method for archiving website.
         :param args: Arbitrary arguments.
         :param kwargs: Arbitrary keyword arguments.
         """
