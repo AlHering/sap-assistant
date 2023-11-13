@@ -94,7 +94,7 @@ class WebsiteArchiver(ABC):
         """
         Method for loading the current state of the archiving process.
         """
-        self.cache = self.cache.update(self.database.get_cache())
+        self.cache.update(self.database.get_cache())
 
     @abstractmethod
     def archive_website(self, *args: Optional[Any], **kwargs: Optional[Any]) -> None:
