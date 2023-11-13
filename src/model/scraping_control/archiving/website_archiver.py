@@ -77,22 +77,24 @@ class WebsiteArchiver(ABC):
         self.failed = set()
         self.reload_last_state = reload_last_state
 
-        # Set run
+        # Set run handle cache
         self.database.set_run(
             self.profile, self.reload_last_state)
+        self.load_state()
 
     def save_state(self, ignored: List[str]) -> None:
         """
         Method for saving the current state of the archiving process.
         :param ignored: Ignored cache fields.
         """
-        pass
+        self.database.update_cache(
+            {key: self.cache[key] for key in self.cache if key not in ignored})
 
     def load_state(self) -> None:
         """
         Method for loading the current state of the archiving process.
         """
-        pass
+        self.cache = self.database.get_cache()
 
     @abstractmethod
     def archive_website(self, *args: Optional[Any], **kwargs: Optional[Any]) -> None:
