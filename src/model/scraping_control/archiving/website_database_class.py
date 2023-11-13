@@ -39,7 +39,7 @@ class WebsiteDatabase(BasicSQLAlchemyInterface):
         """
         working_directory = os.path.join(
             cfg.PATHS.DATA_PATH, "archiving", "schema" if schema else "website_database")
-        self.run = None
+        self.run_id = None
         if not schema.endswith("."):
             schema += "."
         super().__init__(working_directory=working_directory,
@@ -64,17 +64,17 @@ class WebsiteDatabase(BasicSQLAlchemyInterface):
         runs = self.get_objects_by_filtermasks(
             f"{self.schema}runs", [FilterMask([["profile", "==", profile]])])
         if runs and runs[-1].finished is None and reload:
-            self.run = runs[-1]
+            self.run_id = runs[-1].run_id
         else:
-            run_id = self.post_object(
+            self.run_id = self.post_object(
                 f"{self.schema}runs", profile=profile, cache={})
-            self.run = self.get_object_by_id(f"{self.schema}runs", run_id)
 
     def get_cache(self) -> dict:
         """
         Method for getting the cache.
         """
-        return {} if self.run.cache is None else copy.deepcopy(self.run.cache)
+        cache = self.get_object_by_id(f"{self.schema}runs", self.run_id).cache
+        return {} if cache is None else copy.deepcopy(cache)
 
     def update_cache(self, cache: dict, finished: bool = False) -> None:
         """
@@ -83,12 +83,11 @@ class WebsiteDatabase(BasicSQLAlchemyInterface):
         :param finished: Flag, declaring whether process is finished.
             Defaults to False.
         """
-        self.run.cache = copy.deepcopy(cache)
         kwargs = {"cache": cache}
         if finished:
             kwargs["finished"] = datetime.datetime.now()
         self.patch_object(f"{self.schema}runs",
-                          self.run.run_id, **kwargs["finished"])
+                          self.run_id, **kwargs["finished"])
 
     def register_page(self, page_url: str, page_content: str = None,
                       page_path: str = None) -> None:
