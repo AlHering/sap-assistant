@@ -14,7 +14,7 @@ from typing import Optional, Any, List, Union, Tuple
 from src.configuration import configuration as cfg
 from src.utility.silver import file_system_utility
 from requests.exceptions import SSLError
-from src.model.scraping_control.archiving.website_database_class import WebsiteDatabase
+from src.model.scraping_control.archiving.website_database_class import WebsiteDatabase, FilterMask
 from src.model.scraping_control import media_metadata
 
 
@@ -43,7 +43,7 @@ class WebsiteArchiver(ABC):
             'proxies': Proxy dictionary or process flag form ['random', 'torsocks']
             'reconnect_interval': Optional. Time to wait before rechecking on a connection in seconds.
             'reconnect_retries': Optional. Maximum number of reconnection tries.
-        :param reload_last_state: Flag for declaring whether to reload last state from cache dumps.
+        :param reload_last_state: Flag for declaring whether to reload last state from unfinished run.
         :param reload_assets: Flag for declaring whether to redownloading assets.
         """
         self.logger = cfg.LOGGER
@@ -52,6 +52,7 @@ class WebsiteArchiver(ABC):
 
         # Handle archiver instance variables
         self.profile = profile
+        self.cache = {}
         self.offline_copy_path = profile.get("offline_copy_path")
         if self.offline_copy_path is not None and not os.path.exists(self.offline_copy_path):
             os.makedirs(self.offline_copy_path)
@@ -76,32 +77,9 @@ class WebsiteArchiver(ABC):
         self.failed = set()
         self.reload_last_state = reload_last_state
 
-        # Handle cache
-        self.dump_folder = self.profile.get("dump_path", os.path.join(
-            cfg.PATHS.DUMP_PATH, "website_archiver", file_system_utility.clean_directory_name(self.base_url)))
-        if not os.path.exists(self.dump_folder):
-            os.makedirs(self.dump_folder)
-        self._cache = {}
-        self.load_latest_cache()
-
-    def load_latest_cache(self) -> None:
-        """
-        Method for loading latest cache dump from disk.
-        """
-        if self.reload_last_state:
-            dumped_caches = []
-            latest_path = os.path.join(self.dump_folder, "latest.json")
-            if os.path.exists(latest_path):
-                dumped_caches.append(latest_path)
-            else:
-                for root, _, files in os.walk(self.dump_folder, topdown=True):
-                    dumped_caches = [
-                        os.path.join(root, file) for file in files if file.startswith("MILESTONE")]
-                    break
-            if dumped_caches:
-                self.load_state_dump(dumped_caches[-1])
-                self.logger.info(
-                    f"[{self.profile['base_url']}] Reentering on '{dumped_caches[-1]}' ...")
+        # Set run
+        self.database.set_run(
+            self.profile, self.reload_last_state)
 
     @abstractmethod
     def archive_website(self, *args: Optional[Any], **kwargs: Optional[Any]) -> None:
@@ -112,19 +90,17 @@ class WebsiteArchiver(ABC):
         """
         pass
 
-    @abstractmethod
-    def create_state_dump(self, *args: Optional[Any], **kwargs: Optional[Any]) -> None:
+    def save_state(self, *args: Optional[Any], **kwargs: Optional[Any]) -> None:
         """
-        Abstract method for creating state dump of archiver.
+        Method for saving the current state of the archiving process.
         :param args: Arbitrary arguments.
         :param kwargs: Arbitrary keyword arguments.
         """
         pass
 
-    @abstractmethod
-    def load_state_dump(self, *args: Optional[Any], **kwargs: Optional[Any]) -> None:
+    def load_state(self, *args: Optional[Any], **kwargs: Optional[Any]) -> None:
         """
-        Abstract method for loading state dump of archiver.
+        Method for loading the current state of the archiving process.
         :param args: Arbitrary arguments.
         :param kwargs: Arbitrary keyword arguments.
         """
@@ -236,14 +212,14 @@ class WebsiteArchiver(ABC):
         :return: Tuple of asset type, asset content, asset encoding and asset extension.
         """
         try:
-            asset_head = self._cache.get(
+            asset_head = self.cache.get(
                 "session", requests).head(asset_url).headers
-            asset = self._cache.get("session", requests).get(
+            asset = self.cache.get("session", requests).get(
                 asset_url, stream=True)
         except SSLError:
-            asset_head = self._cache.get("session", requests).head(
+            asset_head = self.cache.get("session", requests).head(
                 asset_url, verify=False).headers
-            asset = self._cache.get("session", requests).get(
+            asset = self.cache.get("session", requests).get(
                 asset_url, stream=True, verify=False)
 
         asset_type = asset_head.get("Content-Type")
